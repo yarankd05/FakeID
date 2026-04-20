@@ -727,3 +727,145 @@ async function startCamera(facingMode) {
     }
 }
 ```
+
+---
+
+### 5.7 Recovering from an accidental commit to main
+If you accidentally commit directly to main, do not panic and do not push.
+Follow these steps immediately:
+
+```bash
+# undo the last commit but keep your changes as uncommitted files
+git reset --soft HEAD~1
+
+# now create a proper branch and move your work there
+git checkout -b feature/your-branch-name
+git add .
+git commit -m "feat: your proper commit message"
+git push origin feature/your-branch-name
+```
+
+If you already pushed to main by accident:
+1. Stop immediately — do not push anything else
+2. Message Yara so she does not pull
+3. Run this to revert the push:
+```bash
+git revert HEAD
+git push origin main
+```
+Never use git reset --hard on main after pushing — it rewrites history and breaks Yara's local repo.
+
+---
+
+### 5.8 Adding a new package to requirements.txt
+Follow this exact sequence — never install a package without updating requirements.txt:
+
+```bash
+# 1. tell Yara you are adding a package before doing anything
+# 2. install it
+pip install package-name
+
+# 3. update requirements.txt immediately
+pip freeze > requirements.txt
+
+# 4. commit and push right away — do not bundle with other changes
+git add requirements.txt
+git commit -m "chore: add package-name to requirements"
+git push origin main
+
+# 5. tell Yara to pull and run:
+pip install -r requirements.txt
+```
+
+Rules:
+- Never install a package without adding it to requirements.txt in the same session
+- Never bundle a requirements.txt update with feature code — always a separate commit
+- If a package causes a conflict with existing ones, resolve it before pushing
+
+---
+
+### 5.9 Code freeze before demo
+48 hours before the presentation, the codebase enters code freeze.
+
+Code freeze rules:
+- No new features — only critical bug fixes allowed
+- Every bug fix still goes through a PR and review
+- No changes to requirements.txt
+- No changes to RULES.md
+- No changes to backend/config.py thresholds — demo results must be reproducible
+- Both contributors must have a working local version running end-to-end before freeze begins
+
+To mark the freeze point in git:
+```bash
+git checkout main
+git pull origin main
+git tag -a v1.0-demo -m "demo-ready version"
+git push origin v1.0-demo
+```
+
+---
+
+### 5.10 Tagging a release
+When a meaningful milestone is reached, tag it so you can always return to it.
+
+```bash
+# create an annotated tag
+git tag -a v0.1-foundation -m "foundation files complete"
+git tag -a v0.2-feature3 -m "document authenticity complete"
+git tag -a v0.3-features1-2 -m "face verify and age estimation complete"
+git tag -a v1.0-demo -m "demo-ready version"
+
+# push tags to GitHub
+git push origin --tags
+```
+
+To return to a tagged version if something breaks:
+```bash
+git checkout v1.0-demo
+```
+
+---
+
+### 5.11 Pull request description template
+Every PR must include this description — copy and fill it in when opening the PR on GitHub:
+
+```
+## What changed
+Brief description of what this PR adds or fixes.
+
+## How to test it
+Steps to verify it works locally — e.g. "run uvicorn, send this request, expect this response"
+
+## Known issues or limitations
+Anything incomplete, hardcoded, or temporarily skipped.
+
+## Checklist
+- [ ] Follows all naming conventions from Section 4
+- [ ] All functions have type hints and docstrings
+- [ ] No hardcoded thresholds or paths
+- [ ] No committed weights or venv files
+- [ ] requirements.txt updated if new packages added
+- [ ] Tested locally end-to-end before opening PR
+```
+
+---
+
+### 5.12 What requires a PR review vs what can be self-merged
+Not everything needs a full review. Use this to decide:
+
+Requires review from the other person:
+- Any new model file or route file
+- Any change to backend/schemas.py, backend/dependencies.py, backend/config.py
+- Any change to backend/main.py
+- Any change to requirements.txt
+- Any frontend change that affects how API responses are read or displayed
+- Any change that touches a file owned by the other person
+
+Can be self-merged without review:
+- Fixing a typo in a comment or docstring
+- Adding or updating a notebook
+- Adding test scenario images to data/test_scenarios/
+- Updating RULES.md with agreed changes
+- README updates
+
+When in doubt — ask before merging.
