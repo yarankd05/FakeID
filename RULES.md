@@ -189,7 +189,7 @@ Giorgia must create and push these files before Yara writes any route or model c
 2. backend/schemas.py
 3. backend/utils/exceptions.py
 4. backend/utils/preprocessing.py
-5. backend/dependencies.py
+5. backend/dependencies.py — created as a stub with Yara's imports commented out, uncommented once Yara's model files exist
 
 ###################################
 
@@ -235,6 +235,8 @@ from backend.dependencies import doc_authenticator
 from backend.utils.preprocessing import decode_base64_image
 from backend.utils.exceptions import ZoneDetectionError, PerspectiveCorrectionError
 from backend.utils.exceptions import InvalidImageError, ModelInferenceError
+
+router = APIRouter()
 
 @router.post("/check-document")
 def check_document(request: DocumentRequest):
@@ -552,23 +554,31 @@ does not prevent the others from loading.
 
 ```python
 # backend/dependencies.py
+# NOTE: uncomment Yara's imports only after she has created her model files
+# importing non-existent modules crashes the server before _load() ever runs
 import os
-from backend.models.doc_auth import DocumentAuthenticator
-from backend.models.face_verify import FaceVerifier
-from backend.models.age_model import AgeEstimator
 from backend.config import WEIGHTS_DIR
+from backend.models.doc_auth import DocumentAuthenticator
 
-def _load(cls, path: str):
-    """Load a model instance, return None if weights file is missing."""
+# uncomment when Yara's files exist:
+# from backend.models.face_verify import FaceVerifier
+# from backend.models.age_model import AgeEstimator
+
+def _load(cls: type, path: str) -> object | None:
+    """Load a model instance, return None if weights or module file is missing."""
     try:
         return cls(weights_path=path)
     except FileNotFoundError as e:
         print(f"WARNING: {e}")
         return None
+    except ImportError as e:
+        print(f"WARNING: model module not found — {e}")
+        return None
 
 doc_authenticator = _load(DocumentAuthenticator, f"{WEIGHTS_DIR}/efficientnet.pth")
-face_verifier = _load(FaceVerifier, f"{WEIGHTS_DIR}/arcface.pth")
-age_estimator = _load(AgeEstimator, f"{WEIGHTS_DIR}/dex.pth")
+# uncomment when Yara's files exist:
+# face_verifier = _load(FaceVerifier, f"{WEIGHTS_DIR}/arcface.pth")
+# age_estimator = _load(AgeEstimator, f"{WEIGHTS_DIR}/dex.pth")
 ```
 
 Routes import from dependencies.py — never from main.py:
@@ -653,6 +663,12 @@ LOW_CONFIDENCE_BOUNDARY: float = 0.6       # scores 0.6-0.7 → real but low_con
                                             # CLASSIFIER_REAL_THRESHOLD = real/fake decision
                                             # LOW_CONFIDENCE_BOUNDARY = uncertainty flag only
                                             # these are intentionally different values
+                                            #
+                                            # full three-zone classification logic:
+                                            # score < 0.6  → fake, low_confidence: false
+                                            # score 0.6-0.7 → real, low_confidence: true
+                                            # score > 0.7  → real, low_confidence: false
+
 SUPPORTED_COUNTRIES: list[str] = ["spain", "portugal", "france", "germany", "switzerland", "uk"]
 
 # Paths — always absolute, always safe
@@ -681,6 +697,7 @@ Rules:
 - Every threshold value must have a comment explaining why it was chosen
 - Never leave TODO comments in pushed code — fix it or document it in RULES.md
 - Never commit commented-out code — git preserves history
+  Exception: backend/dependencies.py stub imports are intentionally commented out as documented in Section 4.6
 - Never write a comment that just restates what the next line does
 
 ---
@@ -688,8 +705,7 @@ Rules:
 ### 4.11 JavaScript style (camera.js)
 - Always const for fixed values, let for mutable — never var
 - Always async/await — never .then().catch() chains
-- All API calls wrapped in try/catch
-- Always check response.ok before reading body
+- Always wrap API calls in try/catch — this handles non-JSON responses and network failures
 - Always read result.error — never result.detail
 - Camera errors must always be caught and displayed — never silently ignored
 
@@ -728,6 +744,149 @@ async function startCamera(facingMode) {
 }
 ```
 
+## Section 5: Git Workflow
+
+These rules apply to both contributors equally.
+Breaking these rules is the most common cause of lost work and merge conflicts.
+
+---
+
+### 5.1 Branching strategy
+Never work directly on main. Always work on a feature branch.
+
+Branch naming — always use this format:
+- feature/foundation — config, schemas, dependencies, preprocessing, exceptions (Giorgia — first branch to create)
+- feature/doc-auth — Feature 3 model and route (Giorgia)
+- feature/frontend — frontend HTML/CSS/JS (Giorgia)
+- feature/face-verify — Feature 1 model and route (Yara)
+- feature/age-estimation — Feature 2 model and route (Yara)
+
+Rules:
+- One branch per feature — never mix work from two features in one branch
+- Never commit directly to main — main only receives merges from reviewed pull requests
+- Always branch off the latest main — pull before creating a new branch
+
+Create a branch like this:
+```bash
+git checkout main
+git pull origin main
+git checkout -b feature/foundation
+```
+
+---
+
+### 5.2 Commit message format
+Every commit must follow this exact format:
+
+```
+type: short description in lowercase
+```
+
+Allowed types:
+- feat: — new functionality added
+- fix: — bug fixed
+- chore: — setup, config, dependencies, file structure
+- refactor: — code restructured without changing behavior
+- docs: — changes to RULES.md, README, or comments only
+- test: — evaluation scripts, notebooks, test scenarios
+
+Good examples:
+- feat: add perspective correction to doc_auth pipeline
+- fix: handle missing face detection in verify route
+- chore: add efficientnet weights path to config
+- refactor: move base64 decode to preprocessing utility
+- docs: update section 5 git rules
+
+Bad examples:
+- update
+- fixed stuff
+- wip
+- Giorgia's changes
+- asdfgh
+
+Rules:
+- Description must be lowercase
+- Description must be specific enough that the other person understands what changed without opening the diff
+- Never commit multiple unrelated changes in one commit — one logical change per commit
+
+---
+
+### 5.3 Pull requests and merging
+Never merge your own branch into main without the other person reviewing first.
+
+Workflow for merging a feature:
+1. Push your branch to GitHub
+2. Open a pull request on GitHub — title must match your branch name
+3. Fill in the PR description template from Section 5.11
+4. Tag the other person as reviewer
+5. Other person reviews — if happy, they approve and you merge
+6. Delete the branch after merging — never leave stale branches
+
+```bash
+# push your branch
+git push origin feature/doc-auth
+
+# after PR is approved, merge on GitHub UI then update locally:
+git checkout main
+git pull origin main
+```
+
+Rules:
+- Never use force push on main — git push --force is banned on main
+- Never merge a branch that has conflicts — resolve them locally first
+- Never approve your own pull request
+
+---
+
+### 5.4 Daily workflow
+Follow this exact sequence every time you sit down to code:
+
+```bash
+# 1. always start by pulling latest main
+git checkout main
+git pull origin main
+
+# 2. switch to your feature branch
+git checkout feature/doc-auth
+
+# 3. merge any new main changes into your branch
+git merge main
+
+# 4. write code
+
+# 5. stage and commit with correct format
+git add .
+git commit -m "feat: add zone detection layer to doc_auth"
+
+# 6. push your branch
+git push origin feature/doc-auth
+```
+
+Never start coding without pulling first.
+Never end a session without pushing — unpushed commits are not recoverable if your machine fails.
+
+---
+
+### 5.5 Conflict prevention
+Most conflicts happen when two people edit the same file simultaneously.
+The file ownership rules in Section 2.4 and Section 4 prevent most of this.
+These additional rules cover the rest:
+
+- RULES.md — only one person edits at a time, always push immediately after editing
+- backend/main.py — owned by Giorgia, Yara never edits it directly
+- If you get a merge conflict: stop, message the other person, resolve together — never guess
+
+---
+
+### 5.6 What never gets committed
+These are already in .gitignore but worth stating explicitly:
+- Any file in backend/weights/ — model weights are never committed
+- Any file in data/synthetic/ — generated fake data is never committed
+- venv/ — virtual environment is never committed
+- .env — environment variables are never committed
+- __pycache__/ and *.pyc — Python cache files are never committed
+- Any real ID photos — test scenario images must use synthetic or consented data only
+
 ---
 
 ### 5.7 Recovering from an accidental commit to main
@@ -762,24 +921,29 @@ Follow this exact sequence — never install a package without updating requirem
 
 ```bash
 # 1. tell Yara you are adding a package before doing anything
-# 2. install it
+# 2. create a branch for it
+git checkout -b chore/add-package-name
+
+# 3. install it
 pip install package-name
 
-# 3. update requirements.txt immediately
+# 4. update requirements.txt immediately
 pip freeze > requirements.txt
 
-# 4. commit and push right away — do not bundle with other changes
+# 5. commit and push
 git add requirements.txt
 git commit -m "chore: add package-name to requirements"
-git push origin main
+git push origin chore/add-package-name
 
-# 5. tell Yara to pull and run:
+# 6. open a PR, Yara approves, you merge
+# 7. tell Yara to pull main and run:
 pip install -r requirements.txt
 ```
 
 Rules:
 - Never install a package without adding it to requirements.txt in the same session
-- Never bundle a requirements.txt update with feature code — always a separate commit
+- Never bundle a requirements.txt update with feature code — always a separate branch and commit
+- Never push requirements.txt directly to main — it requires a PR like everything else
 - If a package causes a conflict with existing ones, resolve it before pushing
 
 ---
@@ -809,10 +973,10 @@ git push origin v1.0-demo
 When a meaningful milestone is reached, tag it so you can always return to it.
 
 ```bash
-# create an annotated tag
+# create an annotated tag — names match branch naming convention
 git tag -a v0.1-foundation -m "foundation files complete"
-git tag -a v0.2-feature3 -m "document authenticity complete"
-git tag -a v0.3-features1-2 -m "face verify and age estimation complete"
+git tag -a v0.2-doc-auth -m "document authenticity complete"
+git tag -a v0.3-face-verify-age -m "face verify and age estimation complete"
 git tag -a v1.0-demo -m "demo-ready version"
 
 # push tags to GitHub
