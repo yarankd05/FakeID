@@ -152,7 +152,7 @@ FakeID/
 │   ├── style.css         # All styles — mobile-first
 │   └── camera.js         # All camera logic and API calls to backend
 ├── data/
-│   ├── templates/        # Country layout templates (JSON) — spain.json, france.json etc.
+│   ├── templates/        # Country layout templates (JSON) — spain.json only for prototype
 │   └── test_scenarios/   # Demo test images — one subfolder per scenario
 ├── notebooks/            # Evaluation scripts, threshold tuning, metric plots — report use only
 ├── requirements.txt      # Python dependencies — update if you add a package
@@ -166,7 +166,7 @@ FakeID/
 - routes/ contains only FastAPI endpoints — no ML logic, just call the model and return response
 - utils/ is for functions used by more than one feature — if only one feature uses it, keep it in that feature's file
 - weights/ is local only — never commit weight files, they are gitignored
-- data/templates/ contains one JSON file per country — named spain.json, france.json etc.
+- data/templates/ contains one JSON file per country — currently only spain.json for prototype
 - data/test_scenarios/ contains one subfolder per demo scenario
 - notebooks/ is for exploration only — no production code lives here
 - If you need to add a new file or folder, tell the other person before pushing
@@ -669,7 +669,7 @@ LOW_CONFIDENCE_BOUNDARY: float = 0.6       # scores 0.6-0.7 → real but low_con
                                             # score 0.6-0.7 → real, low_confidence: true
                                             # score > 0.7  → real, low_confidence: false
 
-SUPPORTED_COUNTRIES: list[str] = ["spain", "portugal", "france", "germany", "switzerland", "uk"]
+SUPPORTED_COUNTRIES: list[str] = ["spain"]  # prototype targets Spain only — extend later
 
 # Paths — always absolute, always safe
 WEIGHTS_DIR: str = str(BASE_DIR / "backend" / "weights")

@@ -4,7 +4,7 @@ from pathlib import Path
 BASE_DIR: Path = Path(__file__).resolve().parent.parent
 
 # Face verification
-SIMILARITY_THRESHOLD: float = 0.6          # below this score → suspicious
+SIMILARITY_THRESHOLD: float = 0.28         # below this score → suspicious
 FACE_DETECTION_CONFIDENCE: float = 0.9     # min RetinaFace confidence to accept detection
 
 # Age estimation
@@ -23,7 +23,7 @@ LOW_CONFIDENCE_BOUNDARY: float = 0.6       # scores 0.6-0.7 → real but low_con
                                             # score 0.6-0.7 → real, low_confidence: true
                                             # score > 0.7  → real, low_confidence: false
 
-SUPPORTED_COUNTRIES: list[str] = ["spain", "portugal", "france", "germany", "switzerland", "uk"]
+SUPPORTED_COUNTRIES: list[str] = ["spain"]  # prototype targets Spain only — extend later
 
 # Paths — always absolute, always safe
 WEIGHTS_DIR: str = str(BASE_DIR / "backend" / "weights")
