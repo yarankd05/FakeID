@@ -3,9 +3,8 @@ import os
 from backend.config import WEIGHTS_DIR
 from backend.models.doc_auth import DocumentAuthenticator
 
-# uncomment when Yara's files exist:
-# from backend.models.face_verify import FaceVerifier
-# from backend.models.age_model import AgeEstimator
+from backend.models.face_verify import FaceVerifier
+from backend.models.age_model import AgeEstimator
 
 
 def _load(cls: type, path: str) -> object | None:
@@ -31,6 +30,5 @@ def _load(cls: type, path: str) -> object | None:
 
 doc_authenticator = _load(DocumentAuthenticator, f"{WEIGHTS_DIR}/efficientnet.pth")
 
-# uncomment when Yara's files exist:
-# face_verifier = _load(FaceVerifier, f"{WEIGHTS_DIR}/arcface.pth")
-# age_estimator = _load(AgeEstimator, f"{WEIGHTS_DIR}/dex.pth")
+face_verifier = _load(FaceVerifier, f"{WEIGHTS_DIR}/arcface.pth")
+age_estimator = _load(AgeEstimator, f"{WEIGHTS_DIR}/dex.pth")
