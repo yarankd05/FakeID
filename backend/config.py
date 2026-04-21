@@ -4,7 +4,7 @@ from pathlib import Path
 BASE_DIR: Path = Path(__file__).resolve().parent.parent
 
 # Face verification
-SIMILARITY_THRESHOLD: float = 0.6          # below this score → suspicious
+SIMILARITY_THRESHOLD: float = 0.28         # below this score → suspicious
 FACE_DETECTION_CONFIDENCE: float = 0.9     # min RetinaFace confidence to accept detection
 
 # Age estimation
