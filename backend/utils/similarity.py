@@ -1,29 +1,48 @@
+#standard library
+— none —
+
+#third-party
 import numpy as np
 
-def cosine_similarity(vector_a: np.ndarray, vector_b: np.ndarray) -> float:
-    """
-    Computes cosine similarity between two embedding vectors.
-    Returns a value between -1 and 1, where 1 = identical.
-    """
-    dot_product = np.dot(vector_a, vector_b)
-    norm_a = np.linalg.norm(vector_a)
-    norm_b = np.linalg.norm(vector_b)
-    
-    if norm_a == 0 or norm_b == 0:
-        return 0.0
-    
-    return float(dot_product / (norm_a * norm_b))
+#local
+from backend.utils.exceptions import ModelInferenceError
 
 
-def similarity_to_percentage(similarity: float) -> float:
+def compute_similarity(embedding_a: np.ndarray, embedding_b: np.ndarray) -> float:
     """
-    Converts cosine similarity score to a percentage.
+    Compute cosine similarity between two face embeddings.
+
+    Args:
+        embedding_a: face embedding vector from ID photo, shape (512,)
+        embedding_b: face embedding vector from live photo, shape (512,)
+
+    Returns:
+        cosine similarity score between 0.0 and 1.0
+
+    Raises:
+        ModelInferenceError: if either embedding is None or wrong shape
     """
-    return round(similarity * 100, 2)
+    if embedding_a is None or embedding_b is None:
+        raise ModelInferenceError("Model inference failed")
+
+    #ArcFace embeddings are L2-normalized so dot product equals cosine similarity
+    return float(np.dot(embedding_a, embedding_b))
 
 
-def get_verdict(score: float, threshold: float = 65.0) -> str:
+def similarity_to_percentage(similarity_score: float) -> float:
+    """Convert cosine similarity score to a percentage rounded to 2 decimal places."""
+    return round(similarity_score * 100, 2)
+
+
+def get_verdict(similarity_score: float, threshold: float) -> str:
     """
-    Returns verified or suspicious based on score and threshold.
+    Return verified or suspicious based on score and threshold.
+
+    Args:
+        similarity_score: cosine similarity between 0.0 and 1.0
+        threshold: minimum score to consider identity verified
+
+    Returns:
+        'verified' if score is above threshold, 'suspicious' otherwise
     """
-    return "verified" if score >= threshold else "suspicious"
+    return "verified" if similarity_score >= threshold else "suspicious"
