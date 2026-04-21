@@ -1,48 +1,40 @@
-#standard library
-— none —
-
 #third-party
 import numpy as np
 
 #local
-from backend.utils.exceptions import ModelInferenceError
+from backend.config import SIMILARITY_THRESHOLD
 
 
-def compute_similarity(embedding_a: np.ndarray, embedding_b: np.ndarray) -> float:
+def cosine_similarity(vector_a: np.ndarray, vector_b: np.ndarray) -> float:
     """
-    Compute cosine similarity between two face embeddings.
+    Compute cosine similarity between two embedding vectors.
 
     Args:
-        embedding_a: face embedding vector from ID photo, shape (512,)
-        embedding_b: face embedding vector from live photo, shape (512,)
+        vector_a: first embedding vector
+        vector_b: second embedding vector
 
     Returns:
-        cosine similarity score between 0.0 and 1.0
-
-    Raises:
-        ModelInferenceError: if either embedding is None or wrong shape
+        cosine similarity score between -1 and 1, where 1 = identical
     """
-    if embedding_a is None or embedding_b is None:
-        raise ModelInferenceError("Model inference failed")
+    norm_a = np.linalg.norm(vector_a)
+    norm_b = np.linalg.norm(vector_b)
 
-    #ArcFace embeddings are L2-normalized so dot product equals cosine similarity
-    return float(np.dot(embedding_a, embedding_b))
+    if norm_a == 0 or norm_b == 0:
+        return 0.0
 
-
-def similarity_to_percentage(similarity_score: float) -> float:
-    """Convert cosine similarity score to a percentage rounded to 2 decimal places."""
-    return round(similarity_score * 100, 2)
+    #ArcFace embeddings are L2-normalized so this equals cosine similarity
+    return float(np.dot(vector_a, vector_b) / (norm_a * norm_b))
 
 
-def get_verdict(similarity_score: float, threshold: float) -> str:
+def get_verdict(score: float) -> str:
     """
-    Return verified or suspicious based on score and threshold.
+    Return verified or suspicious based on cosine similarity score.
 
     Args:
-        similarity_score: cosine similarity between 0.0 and 1.0
-        threshold: minimum score to consider identity verified
+        score: cosine similarity score between 0 and 1
 
     Returns:
-        'verified' if score is above threshold, 'suspicious' otherwise
+        'verified' if score >= SIMILARITY_THRESHOLD, else 'suspicious'
     """
-    return "verified" if similarity_score >= threshold else "suspicious"
+    #SIMILARITY_THRESHOLD = 0.6 from config — tuned on LFW evaluation
+    return "verified" if score >= SIMILARITY_THRESHOLD else "suspicious"
