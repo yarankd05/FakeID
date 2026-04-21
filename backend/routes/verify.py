@@ -1,50 +1,54 @@
-from fastapi import APIRouter, UploadFile, File
-import shutil
-import os
-import uuid
-from backend.models.face_verify import verify_faces
+#third-party
+from fastapi import APIRouter
+from fastapi.responses import JSONResponse
+
+#local
+from backend.dependencies import face_verifier
+from backend.schemas import VerifyRequest
+from backend.utils.exceptions import FaceNotDetectedError, ModelInferenceError, InvalidImageError
+from backend.utils.preprocessing import decode_base64_image
 
 router = APIRouter()
 
-TEMP_DIR = "temp_images"
-os.makedirs(TEMP_DIR, exist_ok=True)
-
 
 @router.post("/verify-face")
-async def verify_face(
-    id_image: UploadFile = File(...),
-    live_image: UploadFile = File(...)
-):
-    # generate unique filenames to avoid conflicts between requests
-    id_path = f"{TEMP_DIR}/{uuid.uuid4()}_id.jpg"
-    live_path = f"{TEMP_DIR}/{uuid.uuid4()}_live.jpg"
+def verify_face(request: VerifyRequest):
+    """
+    Verify if the face in an ID photo matches a live photo.
+
+    Args:
+        request: VerifyRequest with id_image and live_image as base64 strings
+
+    Returns:
+        JSONResponse with success envelope and Feature 1 response shape
+    """
+    if face_verifier is None:
+        return JSONResponse(
+            status_code=503,
+            content={"success": False, "data": None, "error": "Model not loaded — weights file missing"}
+        )
 
     try:
-        # save uploaded files temporarily
-        with open(id_path, "wb") as f:
-            shutil.copyfileobj(id_image.file, f)
-        with open(live_path, "wb") as f:
-            shutil.copyfileobj(live_image.file, f)
+        id_image = decode_base64_image(request.id_image)
+        live_image = decode_base64_image(request.live_image)
 
-        # run verification
-        result = verify_faces(id_path, live_path)
+        result = face_verifier.run(id_image, live_image)
 
-        return {
-            "success": True,
-            "data": result,
-            "error": None
-        }
+        return JSONResponse(
+            status_code=200,
+            content={"success": True, "data": result, "error": None}
+        )
 
-    except Exception as e:
-        return {
-            "success": False,
-            "data": None,
-            "error": str(e)
-        }
+    except FaceNotDetectedError as e:
+        print(f"ERROR [face_verify]: {str(e)} | image: {getattr(id_image, 'shape', 'not decoded')}")
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "data": None, "error": str(e)}
+        )
 
-    finally:
-        # always clean up temp files even if something fails
-        if os.path.exists(id_path):
-            os.remove(id_path)
-        if os.path.exists(live_path):
-            os.remove(live_path)
+    except (ModelInferenceError, InvalidImageError) as e:
+        print(f"ERROR [face_verify]: {str(e)} | image: {getattr(id_image, 'shape', 'not decoded')}")
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "data": None, "error": str(e)}
+        )
