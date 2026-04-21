@@ -49,11 +49,9 @@ class FaceVerifier:
                 enforce_detection=True
             )
             return np.array(embedding_result[0]["embedding"])
-
         except ValueError as e:
             #retinaface found no face — enforce_detection=True raises ValueError
             raise FaceNotDetectedError(str(e))
-
         except Exception as e:
             raise ModelInferenceError(str(e))
 
@@ -74,13 +72,10 @@ class FaceVerifier:
         """
         id_embedding = self._get_embedding(id_image)
         live_embedding = self._get_embedding(live_image)
-
         #ArcFace embeddings are L2-normalized so dot product equals cosine similarity
         similarity_score = float(np.dot(id_embedding, live_embedding))
-
         #score below threshold means faces are too different to confirm identity
         verdict = "verified" if similarity_score >= SIMILARITY_THRESHOLD else "suspicious"
-
         return {
             "feature": "face_verification",
             "layers": {

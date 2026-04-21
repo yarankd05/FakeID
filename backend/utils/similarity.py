@@ -18,10 +18,8 @@ def cosine_similarity(vector_a: np.ndarray, vector_b: np.ndarray) -> float:
     """
     norm_a = np.linalg.norm(vector_a)
     norm_b = np.linalg.norm(vector_b)
-
     if norm_a == 0 or norm_b == 0:
         return 0.0
-
     #ArcFace embeddings are L2-normalized so this equals cosine similarity
     return float(np.dot(vector_a, vector_b) / (norm_a * norm_b))
 
@@ -36,5 +34,5 @@ def get_verdict(score: float) -> str:
     Returns:
         'verified' if score >= SIMILARITY_THRESHOLD, else 'suspicious'
     """
-    #SIMILARITY_THRESHOLD = 0.6 from config — tuned on LFW evaluation
+    #SIMILARITY_THRESHOLD = 0.28 from config — tuned on ArcFace LFW evaluation
     return "verified" if score >= SIMILARITY_THRESHOLD else "suspicious"
