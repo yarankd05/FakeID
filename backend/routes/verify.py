@@ -1,6 +1,3 @@
-#standard library
-import os
-
 #third-party
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
