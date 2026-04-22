@@ -1,10 +1,16 @@
+# standard library
 import os
+from pathlib import Path
 
+# local
 from backend.config import WEIGHTS_DIR
 from backend.models.doc_auth import DocumentAuthenticator
-
 from backend.models.face_verify import FaceVerifier
 from backend.models.age_model import AgeEstimator
+
+# DeepFace manages its own weights at ~/.deepface/weights/
+# do not move these — DeepFace expects them in this exact location
+DEEPFACE_WEIGHTS: str = str(Path.home() / ".deepface" / "weights")
 
 
 def _load(cls: type, path: str) -> object | None:
@@ -52,6 +58,5 @@ def _load_doc_authenticator() -> object | None:
 
 
 doc_authenticator = _load_doc_authenticator()
-
-face_verifier = _load(FaceVerifier, f"{WEIGHTS_DIR}/arcface.pth")
-age_estimator = _load(AgeEstimator, f"{WEIGHTS_DIR}/dex.pth")
+face_verifier = _load(FaceVerifier, f"{DEEPFACE_WEIGHTS}/arcface_weights.h5")
+age_estimator = _load(AgeEstimator, f"{DEEPFACE_WEIGHTS}/dex_chalearn_iccv2015.h5")
