@@ -45,8 +45,21 @@ function stopCamera() {
 }
 
 async function startCamera(target) {
+    //if live camera, check age is entered first
+    if (target === 'live') {
+        const ageInput = document.getElementById('age-input').value;
+        if (!ageInput) {
+            document.getElementById('age-input').focus();
+            document.getElementById('age-input').style.border = '1px solid #f87171';
+            setTimeout(() => {
+                document.getElementById('age-input').style.border = '';
+            }, 2000);
+            return;
+        }
+    }
+
     stopCamera();
-    const facingMode = target === 'id' ? 'environment' : 'user';
+    const facingMode = 'environment';
     const videoEl = document.getElementById(`video-${target}`);
     const placeholder = document.getElementById(`cam-placeholder-${target}`);
     const btnEl = document.getElementById(`btn-capture-${target}`);
@@ -74,7 +87,7 @@ function capturePhoto(target) {
     canvasEl.height = videoEl.videoHeight;
     canvasEl.getContext('2d').drawImage(videoEl, 0, 0);
 
-    const base64 = canvasEl.toDataURL('image/jpeg', 0.9).split(',')[1];
+    const base64 = canvasEl.toDataURL('image/jpeg', 0.8).split(',')[1];
 
     if (target === 'id') {
         idImageBase64 = base64;
@@ -175,7 +188,7 @@ function animateProcessing() {
 
 function showResult(faceResult, ageResult, docResult, ageOnId) {
     const faceVerdict = faceResult.success ? faceResult.data.layers.similarity.label : 'suspicious';
-    const faceScore = faceResult.success ? faceResult.data.layers.similarity.score : 0;
+    const faceScore = faceResult.success ? faceResult.data.layers.similarity.score * 100 : 0;
     const ageFlagged = ageResult.success ? ageResult.data.layers.consistency.flag : false;
     const docLabel = docResult.success ? docResult.data.layers.classifier.label : 'unknown';
 
@@ -189,8 +202,8 @@ function showResult(faceResult, ageResult, docResult, ageOnId) {
     SESSION_LOG.unshift(logEntry);
 
     if (overallVerified) {
-        document.getElementById('score-fill-ok').style.width = `${Math.round(faceScore * 100)}%`;
-        document.getElementById('score-num-ok').textContent = `${Math.round(faceScore * 100)}% match`;
+        document.getElementById('score-fill-ok').style.width = `${Math.min(Math.round(faceScore), 100)}%`;
+        document.getElementById('score-num-ok').textContent = `${Math.round(faceScore)}% match`;
         document.getElementById('layer-face-ok').textContent = faceVerdict;
         document.getElementById('layer-age-ok').textContent = ageFlagged ? 'flagged' : 'consistent';
         document.getElementById('layer-age-ok').className = `layer-val ${ageFlagged ? 'flag' : 'ok'}`;
@@ -198,8 +211,8 @@ function showResult(faceResult, ageResult, docResult, ageOnId) {
         launchConfetti();
         goTo('screen-verified');
     } else {
-        document.getElementById('score-fill-warn').style.width = `${Math.round(faceScore * 100)}%`;
-        document.getElementById('score-num-warn').textContent = `${Math.round(faceScore * 100)}% match`;
+        document.getElementById('score-fill-warn').style.width = `${Math.min(Math.round(faceScore), 100)}%`;
+        document.getElementById('score-num-warn').textContent = `${Math.round(faceScore)}% match`;
         document.getElementById('layer-face-warn').textContent = faceVerdict;
         document.getElementById('layer-age-warn').textContent = ageFlagged ? 'flagged' : 'consistent';
         document.getElementById('layer-age-warn').className = `layer-val ${ageFlagged ? 'flag' : 'ok'}`;
