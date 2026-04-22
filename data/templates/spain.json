@@ -1,27 +1,20 @@
 {
-  "country": "spain",
-  "document_type": "DNI 3.0",
-  "image_width_reference": 640,
-  "image_height_reference": 480,
-  "zones": {
-    "photo_zone": {
-      "x_center": 0.82,
-      "y_center": 0.50,
-      "width": 0.22,
-      "height": 0.60
-    },
-    "mrz": {
-      "x_center": 0.50,
-      "y_center": 0.90,
-      "width": 0.90,
-      "height": 0.12
-    },
-    "text_fields": {
-      "x_center": 0.45,
-      "y_center": 0.45,
-      "width": 0.55,
-      "height": 0.55
-    }
+  "photo_zone": {
+    "x": 0.8421,
+    "y": 0.6953,
+    "w": 0.2148,
+    "h": 0.5925
   },
-  "note": "placeholder values — will be replaced with real measurements extracted from MIDV-2020 templates in Phase 3"
+  "text_fields": {
+    "x": 0.503,
+    "y": 0.4202,
+    "w": 0.4333,
+    "h": 0.5381
+  },
+  "id_number": {
+    "x": 0.1677,
+    "y": 0.9565,
+    "w": 0.2901,
+    "h": 0.0871
+  }
 }

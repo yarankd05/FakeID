@@ -1,11 +1,11 @@
-#standard library
+# standard library
 import os
 
-#third-party
+# third-party
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
-#local
+# local
 from backend.dependencies import doc_authenticator
 from backend.schemas import DocumentRequest
 from backend.utils.exceptions import (
@@ -36,6 +36,7 @@ def check_document(request: DocumentRequest):
             content={"success": False, "data": None, "error": "Model not loaded — weights file missing"}
         )
     try:
+        image = None
         image = decode_base64_image(request.id_image)
         result = doc_authenticator.run(image)
         return JSONResponse(

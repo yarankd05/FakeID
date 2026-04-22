@@ -15,12 +15,9 @@ from backend.config import (
     GEOMETRIC_TOLERANCE,
     CLASSIFIER_REAL_THRESHOLD,
     LOW_CONFIDENCE_BOUNDARY,
-    SUPPORTED_COUNTRIES,
-    WEIGHTS_DIR,
     TEMPLATES_DIR,
 )
 from backend.utils.exceptions import (
-    PerspectiveCorrectionError,
     ZoneDetectionError,
     ModelInferenceError,
 )
