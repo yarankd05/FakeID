@@ -21,33 +21,38 @@
   --text-dimmer: #222;
 }
 
-html, body {
-  height: 100%;
-  width: 100%;
+html {
   background: var(--bg);
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
-  overflow: hidden;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
 }
 
 .screen {
   display: none;
-  height: 100vh;
-  width: 100vw;
-  overflow-y: auto;
+  width: 100%;
 }
 
-.screen.active { display: flex; }
+.screen.active {
+  display: block;
+  width: 100%;
+}
 
 .screen-inner {
   display: flex;
   flex-direction: column;
-  padding: 52px 24px 40px;
+  padding: 52px 24px 80px;
   width: 100%;
-  min-height: 100%;
+  min-height: 100vh;
+  gap: 12px;
 }
 
-.spacer { flex: 1; }
+.spacer { flex: 1; min-height: 20px; }
 
 .app-name {
   font-size: 32px;
@@ -113,9 +118,10 @@ html, body {
   font-weight: 500;
   letter-spacing: 0.03em;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.btn-neon:active { opacity: 0.85; transform: scale(0.98); }
+.btn-neon:active { opacity: 0.85; }
 
 .btn-ghost {
   width: 100%;
@@ -126,6 +132,7 @@ html, body {
   padding: 16px 0;
   font-size: 14px;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .btn-deny {
@@ -139,13 +146,13 @@ html, body {
   font-weight: 500;
   letter-spacing: 0.04em;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .step-row {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 16px;
 }
 
 .step-dot {
@@ -167,13 +174,11 @@ html, body {
   font-size: 22px;
   font-weight: 500;
   color: var(--text);
-  margin-bottom: 4px;
 }
 
 .screen-sub {
   font-size: 13px;
   color: var(--text-muted);
-  margin-bottom: 16px;
 }
 
 .cam-box {
@@ -187,7 +192,6 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 12px;
 }
 
 .cam-box video {
@@ -259,7 +263,6 @@ html, body {
   font-size: 11px;
   color: var(--text-dim);
   align-self: flex-start;
-  margin-bottom: 8px;
 }
 
 .liveness-pill {
@@ -273,7 +276,6 @@ html, body {
   font-size: 11px;
   color: var(--purple-light);
   align-self: flex-start;
-  margin-bottom: 12px;
 }
 
 .liveness-dot {
@@ -288,7 +290,6 @@ html, body {
   border: 0.5px solid var(--border);
   border-radius: 12px;
   padding: 10px 14px;
-  margin-bottom: 8px;
 }
 
 .age-label {
@@ -309,18 +310,25 @@ html, body {
 
 .age-input-wrap input::placeholder { color: var(--border2); }
 
+.processing-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  gap: 12px;
+}
+
 .processing-title {
   font-size: 18px;
   color: var(--purple-light);
   font-weight: 500;
   letter-spacing: 0.1em;
-  margin-bottom: 8px;
 }
 
 .processing-dots {
   display: flex;
   gap: 5px;
-  margin-bottom: 24px;
 }
 
 .pdot {
@@ -358,7 +366,6 @@ html, body {
   border-radius: 16px;
   padding: 20px 16px;
   text-align: center;
-  margin-bottom: 12px;
   position: relative;
   overflow: hidden;
 }
@@ -402,7 +409,6 @@ html, body {
   background: var(--surface);
   border-radius: 14px;
   padding: 10px 14px;
-  margin-bottom: 8px;
 }
 
 .layer-row {
@@ -420,7 +426,7 @@ html, body {
 .layer-val.warn { color: var(--red); }
 .layer-val.flag { color: var(--orange); }
 
-.log-list { display: flex; flex-direction: column; gap: 0; margin-bottom: 8px; }
+.log-list { display: flex; flex-direction: column; }
 
 .log-entry {
   display: flex;
@@ -446,13 +452,14 @@ html, body {
 .log-time { font-size: 11px; color: var(--text-dimmer); margin-left: 6px; }
 
 #confetti-container {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
   overflow: hidden;
+  z-index: 999;
 }
 
 .confetti-piece {
@@ -465,5 +472,5 @@ html, body {
 
 @keyframes confetti-fall {
   0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
-  100% { transform: translateY(300px) rotate(720deg); opacity: 0; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
 }
