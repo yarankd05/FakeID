@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>FakeID</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+  <!-- screen 1: home -->
+  <div class="screen active" id="screen-home">
+    <div class="screen-inner">
+      <div class="spacer"></div>
+      <div class="logo-wrap">
+        <div class="logo-icon">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <rect x="1" y="5" width="26" height="18" rx="3" stroke="#6d28d9" stroke-width="1.5"/>
+            <rect x="2" y="6" width="8" height="11" rx="1" fill="#1a1a2e"/>
+            <circle cx="6" cy="11.5" r="2.5" stroke="#a78bfa" stroke-width="1"/>
+            <line x1="12" y1="9" x2="25" y2="9" stroke="#2a2a4a" stroke-width="1"/>
+            <line x1="12" y1="12" x2="22" y2="12" stroke="#2a2a4a" stroke-width="1"/>
+            <line x1="12" y1="15" x2="20" y2="15" stroke="#2a2a4a" stroke-width="1"/>
+          </svg>
+        </div>
+        <div class="app-name">FAKE<span class="neon">ID</span></div>
+        <div class="app-sub">identity verification</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="ready-pill">
+        <div class="ready-dot"></div>
+        <span>system ready</span>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn-neon" onclick="goTo('screen-scan-id')">start verification</button>
+      <button class="btn-ghost" onclick="goTo('screen-log')" style="margin-top:10px;">session log</button>
+    </div>
+  </div>
+
+  <!-- screen 2: scan id -->
+  <div class="screen" id="screen-scan-id">
+    <div class="screen-inner">
+      <div class="step-row">
+        <div class="step-dot active"></div>
+        <div class="step-dot"></div>
+        <div class="step-dot"></div>
+        <span class="step-label">step 1 of 3</span>
+      </div>
+      <div class="screen-title">scan ID document</div>
+      <div class="screen-sub">point camera at the front of the ID</div>
+      <div class="cam-box" id="cam-box-id">
+        <video id="video-id" autoplay playsinline></video>
+        <canvas id="canvas-id" style="display:none;"></canvas>
+        <div class="scan-line"></div>
+        <div class="cam-placeholder" id="cam-placeholder-id">
+          <svg width="32" height="20" viewBox="0 0 32 20" fill="none">
+            <rect x="0.5" y="0.5" width="31" height="19" rx="2.5" stroke="#2a2a4a"/>
+            <rect x="1" y="1" width="9" height="13" rx="1" fill="#1a1a2e"/>
+            <line x1="13" y1="4" x2="30" y2="4" stroke="#2a2a4a" stroke-width="1"/>
+            <line x1="13" y1="8" x2="26" y2="8" stroke="#2a2a4a" stroke-width="1"/>
+          </svg>
+          <div class="cam-label">tap to open camera</div>
+        </div>
+      </div>
+      <div class="doc-pill">DNI · NIE · Passport</div>
+      <div class="spacer"></div>
+      <button class="btn-neon" id="btn-capture-id" onclick="startCamera('id')">open camera</button>
+      <button class="btn-ghost" onclick="useGallery('id')" style="margin-top:8px;">use gallery</button>
+      <input type="file" id="gallery-id" accept="image/*" style="display:none;" onchange="handleGallery(event,'id')" />
+    </div>
+  </div>
+
+  <!-- screen 3: live face -->
+  <div class="screen" id="screen-live">
+    <div class="screen-inner">
+      <div class="step-row">
+        <div class="step-dot active"></div>
+        <div class="step-dot active"></div>
+        <div class="step-dot"></div>
+        <span class="step-label">step 2 of 3</span>
+      </div>
+      <div class="screen-title">live photo</div>
+      <div class="screen-sub">ask person to look at the camera</div>
+      <div class="cam-box face-cam" id="cam-box-live">
+        <video id="video-live" autoplay playsinline></video>
+        <canvas id="canvas-live" style="display:none;"></canvas>
+        <div class="face-oval-overlay"></div>
+        <div class="cam-placeholder" id="cam-placeholder-live">
+          <div class="face-oval-static">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="9" r="4" stroke="#2a2a4a" stroke-width="1.2"/>
+              <path d="M4 22c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="#2a2a4a" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="cam-label">tap to open camera</div>
+        </div>
+      </div>
+      <div class="liveness-pill">
+        <div class="liveness-dot"></div>
+        <span>liveness check active</span>
+      </div>
+      <div class="age-input-wrap">
+        <div class="age-label">age on ID</div>
+        <input type="number" id="age-input" placeholder="enter age" min="1" max="120" />
+      </div>
+      <div class="spacer"></div>
+      <button class="btn-neon" id="btn-capture-live" onclick="startCamera('live')">open camera</button>
+    </div>
+  </div>
+
+  <!-- screen 4: processing -->
+  <div class="screen" id="screen-processing">
+    <div class="screen-inner" style="justify-content:center;align-items:center;">
+      <div class="processing-title">analysing</div>
+      <div class="processing-dots">
+        <div class="pdot on"></div>
+        <div class="pdot on"></div>
+        <div class="pdot"></div>
+        <div class="pdot"></div>
+      </div>
+      <div class="process-box">
+        <div class="proc-row"><span class="proc-name">face detection</span><span class="proc-status done" id="proc-1">waiting</span></div>
+        <div class="proc-row"><span class="proc-name">arcface embedding</span><span class="proc-status" id="proc-2">waiting</span></div>
+        <div class="proc-row"><span class="proc-name">similarity check</span><span class="proc-status" id="proc-3">waiting</span></div>
+        <div class="proc-row"><span class="proc-name">age estimation</span><span class="proc-status" id="proc-4">waiting</span></div>
+        <div class="proc-row" style="border:none;"><span class="proc-name">document auth</span><span class="proc-status" id="proc-5">waiting</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- screen 5a: verified -->
+  <div class="screen" id="screen-verified">
+    <div class="screen-inner">
+      <div id="confetti-container"></div>
+      <div class="result-card ok">
+        <div class="result-label ok">verified</div>
+        <div class="result-sub">identity confirmed</div>
+        <div class="score-bar"><div class="score-fill ok" id="score-fill-ok"></div></div>
+        <div class="score-num ok" id="score-num-ok">—</div>
+      </div>
+      <div class="layers-box">
+        <div class="layer-row"><span class="layer-name">face match</span><span class="layer-val ok" id="layer-face-ok">—</span></div>
+        <div class="layer-row"><span class="layer-name">age check</span><span class="layer-val" id="layer-age-ok">—</span></div>
+        <div class="layer-row" style="border:none;"><span class="layer-name">document</span><span class="layer-val ok" id="layer-doc-ok">—</span></div>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn-neon" onclick="resetApp()">admit — next person</button>
+      <button class="btn-ghost" onclick="goTo('screen-log')" style="margin-top:8px;">log entry</button>
+    </div>
+  </div>
+
+  <!-- screen 5b: suspicious -->
+  <div class="screen" id="screen-suspicious">
+    <div class="screen-inner">
+      <div class="result-card warn">
+        <div class="result-label warn">suspicious</div>
+        <div class="result-sub">manual check needed</div>
+        <div class="score-bar"><div class="score-fill warn" id="score-fill-warn"></div></div>
+        <div class="score-num warn" id="score-num-warn">—</div>
+      </div>
+      <div class="layers-box">
+        <div class="layer-row"><span class="layer-name">face match</span><span class="layer-val warn" id="layer-face-warn">—</span></div>
+        <div class="layer-row"><span class="layer-name">age check</span><span class="layer-val flag" id="layer-age-warn">—</span></div>
+        <div class="layer-row" style="border:none;"><span class="layer-name">document</span><span class="layer-val" id="layer-doc-warn">—</span></div>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn-deny" onclick="resetApp()">deny entry</button>
+      <button class="btn-ghost" onclick="goTo('screen-log')" style="margin-top:8px;">flag for manager</button>
+    </div>
+  </div>
+
+  <!-- screen 6: log -->
+  <div class="screen" id="screen-log">
+    <div class="screen-inner">
+      <div class="screen-title">session log</div>
+      <div class="screen-sub">tonight · madrid</div>
+      <div id="log-list" class="log-list"></div>
+      <div class="spacer"></div>
+      <button class="btn-ghost" onclick="goTo('screen-home')">back to home</button>
+    </div>
+  </div>
+
+  <script src="/static/camera.js"></script>
+</body>
+</html>
