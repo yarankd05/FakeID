@@ -75,8 +75,9 @@ Rules:
       },
       "zone_detection": {
         "photo_zone": true,
-        "mrz": true,
-        "text_fields": true
+        "id_number": true,
+        "text_fields": true,
+        "all_zones_detected": true
       },
       "geometric_analysis": {
         "country_matched": "spain",
@@ -339,7 +340,8 @@ Feature 2 — age estimation:
 
 Feature 3 — document authenticity:
 - Perspective correction fails → PerspectiveCorrectionError("Document perspective correction failed")
-- YOLO detects zero zones → ZoneDetectionError("No document zones detected")
+- YOLO detects zero zones → ZoneDetectionError("No document zones detected") — only raised on zero detections
+- YOLO detects 1 or 2 zones (partial detection) → continue pipeline with detected zones only, set all_zones_detected: false, force low_confidence: true regardless of classifier score
 - Country not matched to any template → return deviation_score: 1.0, country_matched: "unknown", within_tolerance: false
 - EfficientNet score between LOW_CONFIDENCE_BOUNDARY and CLASSIFIER_REAL_THRESHOLD → return result with low_confidence: true
 
