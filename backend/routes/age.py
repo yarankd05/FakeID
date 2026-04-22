@@ -1,6 +1,3 @@
-#standard library
-import os
-
 #third-party
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
@@ -36,6 +33,8 @@ def estimate_age(request: AgeRequest):
             status_code=400,
             content={"success": False, "data": None, "error": "Missing required field: age_on_id"}
         )
+
+    live_image = None
 
     try:
         live_image = decode_base64_image(request.live_image)

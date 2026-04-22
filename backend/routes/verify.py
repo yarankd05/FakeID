@@ -28,6 +28,9 @@ def verify_face(request: VerifyRequest):
             content={"success": False, "data": None, "error": "Model not loaded — weights file missing"}
         )
 
+    id_image = None
+    live_image = None
+
     try:
         id_image = decode_base64_image(request.id_image)
         live_image = decode_base64_image(request.live_image)
