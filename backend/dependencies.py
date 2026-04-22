@@ -28,7 +28,30 @@ def _load(cls: type, path: str) -> object | None:
         return None
 
 
-doc_authenticator = _load(DocumentAuthenticator, f"{WEIGHTS_DIR}/efficientnet.pth")
+def _load_doc_authenticator() -> object | None:
+    """
+    Load DocumentAuthenticator with both required weight files.
+    Returns None if either weights file is missing.
+
+    Returns:
+        Instantiated DocumentAuthenticator or None if loading fails
+    """
+    yolo_path = f"{WEIGHTS_DIR}/yolo_zones.pt"
+    efficientnet_path = f"{WEIGHTS_DIR}/efficientnet.pth"
+    try:
+        return DocumentAuthenticator(
+            yolo_path=yolo_path,
+            efficientnet_path=efficientnet_path
+        )
+    except FileNotFoundError as e:
+        print(f"WARNING: {e}")
+        return None
+    except ImportError as e:
+        print(f"WARNING: model module not found — {e}")
+        return None
+
+
+doc_authenticator = _load_doc_authenticator()
 
 face_verifier = _load(FaceVerifier, f"{WEIGHTS_DIR}/arcface.pth")
 age_estimator = _load(AgeEstimator, f"{WEIGHTS_DIR}/dex.pth")
