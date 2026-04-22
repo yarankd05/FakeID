@@ -12,6 +12,28 @@ function resetApp() {
     idImageBase64 = null;
     liveImageBase64 = null;
     stopCamera();
+
+    //reset id camera screen
+    const videoId = document.getElementById('video-id');
+    const placeholderId = document.getElementById('cam-placeholder-id');
+    const btnId = document.getElementById('btn-capture-id');
+    videoId.classList.remove('active');
+    placeholderId.style.display = 'flex';
+    btnId.textContent = 'open camera';
+    btnId.onclick = () => startCamera('id');
+
+    //reset live camera screen
+    const videoLive = document.getElementById('video-live');
+    const placeholderLive = document.getElementById('cam-placeholder-live');
+    const btnLive = document.getElementById('btn-capture-live');
+    videoLive.classList.remove('active');
+    placeholderLive.style.display = 'flex';
+    btnLive.textContent = 'open camera';
+    btnLive.onclick = () => startCamera('live');
+
+    //reset age input
+    document.getElementById('age-input').value = '';
+
     goTo('screen-home');
 }
 
