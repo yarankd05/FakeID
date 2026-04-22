@@ -59,4 +59,4 @@ def _load_doc_authenticator() -> object | None:
 
 doc_authenticator = _load_doc_authenticator()
 face_verifier = _load(FaceVerifier, f"{DEEPFACE_WEIGHTS}/arcface_weights.h5")
-age_estimator = _load(AgeEstimator, f"{DEEPFACE_WEIGHTS}/dex_chalearn_iccv2015.h5")
+age_estimator = _load(AgeEstimator, f"{DEEPFACE_WEIGHTS}/age_model_weights.h5")
