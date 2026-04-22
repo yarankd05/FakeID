@@ -223,7 +223,7 @@ class DocumentAuthenticator:
         Raises:
             ZoneDetectionError: if zero zones are detected
         """
-        results = self.zone_detector(image, verbose=False)
+        results = self.zone_detector(image, verbose=False, conf=0.15)
 
         best_per_class: dict[str, dict] = {}
         for result in results:
