@@ -1,5 +1,4 @@
 # standard library
-import os
 
 # third-party
 from fastapi import APIRouter
@@ -10,7 +9,6 @@ from backend.dependencies import doc_authenticator
 from backend.schemas import DocumentRequest
 from backend.utils.exceptions import (
     PerspectiveCorrectionError,
-    ZoneDetectionError,
     ModelInferenceError,
     InvalidImageError
 )
@@ -43,7 +41,7 @@ def check_document(request: DocumentRequest):
             status_code=200,
             content={"success": True, "data": result, "error": None}
         )
-    except (InvalidImageError, ZoneDetectionError, PerspectiveCorrectionError) as e:
+    except (InvalidImageError, PerspectiveCorrectionError) as e:
         print(f"ERROR [doc_auth]: {str(e)} | image: {getattr(image, 'shape', 'not decoded')}")
         return JSONResponse(
             status_code=400,

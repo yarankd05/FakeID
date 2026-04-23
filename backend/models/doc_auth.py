@@ -17,6 +17,8 @@ from backend.config import (
     CLASSIFIER_REAL_THRESHOLD,
     LOW_CONFIDENCE_BOUNDARY,
     TEMPLATES_DIR,
+    GEOMETRIC_TOLERANCE_SCAN,
+    GEOMETRIC_TOLERANCE_PHOTO,
 )
 from backend.utils.exceptions import (
     ZoneDetectionError,
@@ -57,13 +59,10 @@ class DocumentAuthenticator:
         self.card_detector.set_classes(["id card", "credit card", "identity document", "card"])
         self.classifier = self._load_classifier(efficientnet_path)
 
-
-
         with open(os.path.join(TEMPLATES_DIR, "spain.json"), "r") as f:
             self.template_scan: dict = json.load(f)
         with open(os.path.join(TEMPLATES_DIR, "spain_photo.json"), "r") as f:
             self.template_photo: dict = json.load(f)
-
 
     def _load_zone_detector(self, yolo_path: str) -> YOLO:
         """
@@ -146,7 +145,7 @@ class DocumentAuthenticator:
         partial_detection = not _ALL_ZONES.issubset(detected_zones.keys())
 
         template = self.template_scan if is_scan else self.template_photo
-        tolerance = 0.08 if is_scan else 0.25
+        tolerance = GEOMETRIC_TOLERANCE_SCAN if is_scan else GEOMETRIC_TOLERANCE_PHOTO
         geometry = self._analyze_geometry(detected_zones, template, tolerance)
         classification = self._classify(image, partial_detection)
 
@@ -165,7 +164,7 @@ class DocumentAuthenticator:
         """
         try:
             # primary: YOLO-World zero-shot card detection (phone photos only)
-            # skip for pre-cropped scans — max dimension <= 2000px means already cropped
+            #skip for scans — A4 aspect ratio is outside phone photo range (1.1–2.2)
             h, w = image.shape[:2]
             aspect = w / h
             # ID card aspect ratio is ~1.586 (85.6mm x 54mm)
@@ -309,7 +308,7 @@ class DocumentAuthenticator:
         Keeps highest-confidence detection per class if duplicates exist.
 
         Args:
-            image: perspective-corrected document image, BGR format
+            image: raw original input image, BGR format
 
         Returns:
             dict mapping zone name to normalised centre/size coordinates:
@@ -318,7 +317,6 @@ class DocumentAuthenticator:
         Raises:
             ZoneDetectionError: if zero zones are detected
         """
-
         results = self.zone_detector(image, verbose=False, conf=0.15)
 
 
