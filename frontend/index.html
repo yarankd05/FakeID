@@ -2,31 +2,37 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <meta name="theme-color" content="#050508" />
   <title>FakeID</title>
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
 
+  <div class="flash-overlay" id="flash-overlay"></div>
+  <canvas id="particle-canvas"></canvas>
+
   <!-- screen 1: home -->
   <div class="screen active" id="screen-home">
-    <div class="screen-inner">
+    <div class="home-video-overlay"></div>
+    <div class="club-lights">
+      <div class="light light-1"></div>
+      <div class="light light-2"></div>
+      <div class="light light-3"></div>
+      <div class="light light-4"></div>
+    </div>
+    <div class="screen-inner home-inner">
       <div class="spacer"></div>
-      <div class="logo-wrap">
-        <div class="logo-icon">
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-            <rect x="1" y="5" width="26" height="18" rx="3" stroke="#6d28d9" stroke-width="1.5"/>
-            <rect x="2" y="6" width="8" height="11" rx="1" fill="#1a1a2e"/>
-            <circle cx="6" cy="11.5" r="2.5" stroke="#a78bfa" stroke-width="1"/>
-            <line x1="12" y1="9" x2="25" y2="9" stroke="#2a2a4a" stroke-width="1"/>
-            <line x1="12" y1="12" x2="22" y2="12" stroke="#2a2a4a" stroke-width="1"/>
-            <line x1="12" y1="15" x2="20" y2="15" stroke="#2a2a4a" stroke-width="1"/>
-          </svg>
+      <div class="home-logo-wrap">
+        <div class="bouncer-eyes-home">
+          <div class="eye-home"></div>
+          <div class="eye-home" style="animation-delay:0.15s;"></div>
         </div>
-        <div class="app-name">FAKE<span class="neon">ID</span></div>
-        <div class="app-sub">identity verification</div>
+        <div class="home-title">FAKE<span class="neon">ID</span></div>
+        <div class="home-sub">madrid · identity verification</div>
+        <div class="home-location">serrano 43</div>
       </div>
       <div class="spacer"></div>
       <div class="ready-pill">
@@ -34,7 +40,7 @@
         <span>system ready</span>
       </div>
       <div class="spacer"></div>
-      <button class="btn-neon" onclick="goTo('screen-scan-id')">start verification</button>
+      <button class="btn-neon btn-neon-home" onclick="startVerification()">start verification</button>
       <button class="btn-ghost" onclick="goTo('screen-log')" style="margin-top:10px;">session log</button>
     </div>
   </div>
@@ -42,6 +48,9 @@
   <!-- screen 2: scan id -->
   <div class="screen" id="screen-scan-id">
     <div class="screen-inner">
+      <div class="top-nav-row">
+        <button class="btn-back" onclick="goTo('screen-home')">‹ back</button>
+      </div>
       <div class="step-row">
         <div class="step-dot active"></div>
         <div class="step-dot"></div>
@@ -54,27 +63,37 @@
         <video id="video-id" autoplay playsinline></video>
         <canvas id="canvas-id" style="display:none;"></canvas>
         <div class="scan-line"></div>
+        <img id="preview-id" style="display:none;width:100%;height:100%;object-fit:cover;" />
+        <div id="video-preview-id" style="display:none;width:100%;height:100%;position:absolute;top:0;left:0;"></div>
         <div class="cam-placeholder" id="cam-placeholder-id">
-          <svg width="32" height="20" viewBox="0 0 32 20" fill="none">
-            <rect x="0.5" y="0.5" width="31" height="19" rx="2.5" stroke="#2a2a4a"/>
-            <rect x="1" y="1" width="9" height="13" rx="1" fill="#1a1a2e"/>
-            <line x1="13" y1="4" x2="30" y2="4" stroke="#2a2a4a" stroke-width="1"/>
-            <line x1="13" y1="8" x2="26" y2="8" stroke="#2a2a4a" stroke-width="1"/>
+          <svg width="40" height="26" viewBox="0 0 40 26" fill="none">
+            <rect x="0.5" y="0.5" width="39" height="25" rx="3" stroke="#2a2a4a"/>
+            <rect x="1" y="1" width="11" height="17" rx="1" fill="#1a1a2e"/>
+            <line x1="15" y1="6" x2="38" y2="6" stroke="#2a2a4a" stroke-width="1"/>
+            <line x1="15" y1="11" x2="34" y2="11" stroke="#2a2a4a" stroke-width="1"/>
+            <line x1="15" y1="16" x2="30" y2="16" stroke="#2a2a4a" stroke-width="1"/>
           </svg>
           <div class="cam-label">tap to open camera</div>
         </div>
       </div>
+      <div id="retake-row-id" class="retake-row" style="display:none;">
+        <button class="btn-retake" id="btn-retake-id">retake</button>
+        <button class="btn-use" id="btn-use-id">use photo</button>
+      </div>
       <div class="doc-pill">DNI · NIE · Passport</div>
       <div class="spacer"></div>
       <button class="btn-neon" id="btn-capture-id" onclick="startCamera('id')">open camera</button>
-      <button class="btn-ghost" onclick="useGallery('id')" style="margin-top:8px;">use gallery</button>
-      <input type="file" id="gallery-id" accept="image/*" style="display:none;" onchange="handleGallery(event,'id')" />
+      <button class="btn-ghost" onclick="useGallery('id')" style="margin-top:8px;">use gallery / video</button>
+      <input type="file" id="gallery-id" accept="image/*,video/mp4,video/*" style="display:none;" onchange="handleGallery(event,'id')" />
     </div>
   </div>
 
   <!-- screen 3: live face -->
   <div class="screen" id="screen-live">
     <div class="screen-inner">
+      <div class="top-nav-row">
+        <button class="btn-back" onclick="goTo('screen-scan-id')">‹ back</button>
+      </div>
       <div class="step-row">
         <div class="step-dot active"></div>
         <div class="step-dot active"></div>
@@ -87,6 +106,8 @@
         <video id="video-live" autoplay playsinline></video>
         <canvas id="canvas-live" style="display:none;"></canvas>
         <div class="face-oval-overlay"></div>
+        <img id="preview-live" style="display:none;width:100%;height:100%;object-fit:cover;" />
+        <div id="video-preview-live" style="display:none;width:100%;height:100%;position:absolute;top:0;left:0;"></div>
         <div class="cam-placeholder" id="cam-placeholder-live">
           <div class="face-oval-static">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -94,8 +115,12 @@
               <path d="M4 22c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="#2a2a4a" stroke-width="1.2" stroke-linecap="round"/>
             </svg>
           </div>
-          <div class="cam-label">tap to open camera</div>
+          <div class="cam-label">enter age first then open camera</div>
         </div>
+      </div>
+      <div id="retake-row-live" class="retake-row" style="display:none;">
+        <button class="btn-retake" id="btn-retake-live">retake</button>
+        <button class="btn-use" id="btn-use-live">use photo</button>
       </div>
       <div class="liveness-pill">
         <div class="liveness-dot"></div>
@@ -103,7 +128,7 @@
       </div>
       <div class="age-input-wrap">
         <div class="age-label">age on ID</div>
-        <input type="number" id="age-input" placeholder="enter age" min="1" max="120" />
+        <input type="number" id="age-input" placeholder="enter age first" min="1" max="120" step="1" />
       </div>
       <div class="spacer"></div>
       <button class="btn-neon" id="btn-capture-live" onclick="startCamera('live')">open camera</button>
@@ -112,20 +137,31 @@
 
   <!-- screen 4: processing -->
   <div class="screen" id="screen-processing">
-    <div class="screen-inner" style="justify-content:center;align-items:center;">
-      <div class="processing-title">analysing</div>
-      <div class="processing-dots">
-        <div class="pdot on"></div>
-        <div class="pdot on"></div>
-        <div class="pdot"></div>
-        <div class="pdot"></div>
+    <div class="screen-inner processing-screen">
+      <div class="top-progress-bar">
+        <div class="top-progress-fill" id="top-progress"></div>
+      </div>
+      <div class="processing-top">
+        <div class="scanning-icon">
+          <div class="scan-ring ring-1"></div>
+          <div class="scan-ring ring-2"></div>
+          <div class="scan-ring ring-3"></div>
+          <div class="scan-core">
+            <div class="bouncer-eyes">
+              <div class="eye" style="width:14px;height:14px;"></div>
+              <div class="eye" style="width:14px;height:14px;animation-delay:0.15s;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="processing-title">analysing</div>
+        <div class="processing-sub">please wait while we verify identity</div>
       </div>
       <div class="process-box">
-        <div class="proc-row"><span class="proc-name">face detection</span><span class="proc-status done" id="proc-1">waiting</span></div>
-        <div class="proc-row"><span class="proc-name">arcface embedding</span><span class="proc-status" id="proc-2">waiting</span></div>
-        <div class="proc-row"><span class="proc-name">similarity check</span><span class="proc-status" id="proc-3">waiting</span></div>
-        <div class="proc-row"><span class="proc-name">age estimation</span><span class="proc-status" id="proc-4">waiting</span></div>
-        <div class="proc-row" style="border:none;"><span class="proc-name">document auth</span><span class="proc-status" id="proc-5">waiting</span></div>
+        <div class="proc-row" id="proc-row-1"><div class="proc-left"><div class="proc-dot" id="proc-dot-1"></div><span class="proc-name">face detection</span></div><span class="proc-status" id="proc-1">waiting</span></div>
+        <div class="proc-row" id="proc-row-2"><div class="proc-left"><div class="proc-dot" id="proc-dot-2"></div><span class="proc-name">arcface embedding</span></div><span class="proc-status" id="proc-2">waiting</span></div>
+        <div class="proc-row" id="proc-row-3"><div class="proc-left"><div class="proc-dot" id="proc-dot-3"></div><span class="proc-name">similarity check</span></div><span class="proc-status" id="proc-3">waiting</span></div>
+        <div class="proc-row" id="proc-row-4"><div class="proc-left"><div class="proc-dot" id="proc-dot-4"></div><span class="proc-name">age estimation</span></div><span class="proc-status" id="proc-4">waiting</span></div>
+        <div class="proc-row" id="proc-row-5" style="border:none;"><div class="proc-left"><div class="proc-dot" id="proc-dot-5"></div><span class="proc-name">document auth</span></div><span class="proc-status" id="proc-5">waiting</span></div>
       </div>
     </div>
   </div>
@@ -141,13 +177,26 @@
         <div class="score-num ok" id="score-num-ok">—</div>
       </div>
       <div class="layers-box">
-        <div class="layer-row"><span class="layer-name">face match</span><span class="layer-val ok" id="layer-face-ok">—</span></div>
-        <div class="layer-row"><span class="layer-name">age check</span><span class="layer-val" id="layer-age-ok">—</span></div>
-        <div class="layer-row" style="border:none;"><span class="layer-name">document</span><span class="layer-val ok" id="layer-doc-ok">—</span></div>
+        <div class="layer-card" id="lcard-face-ok">
+          <div class="layer-card-top"><span class="layer-card-name">face match</span><span class="layer-card-score" id="layer-face-score-ok">—</span></div>
+          <span class="layer-card-val ok" id="layer-face-ok">—</span>
+          <div class="layer-card-bar"><div class="layer-card-bar-fill ok" id="layer-face-bar-ok"></div></div>
+        </div>
+        <div class="layer-card" id="lcard-age-ok">
+          <div class="layer-card-top"><span class="layer-card-name">age check</span><span class="layer-card-score" id="layer-age-score-ok">—</span></div>
+          <span class="layer-card-val ok" id="layer-age-ok">—</span>
+          <div class="layer-card-bar"><div class="layer-card-bar-fill ok" id="layer-age-bar-ok"></div></div>
+        </div>
+        <div class="layer-card" id="lcard-doc-ok">
+          <div class="layer-card-top"><span class="layer-card-name">document</span><span class="layer-card-score" id="layer-doc-score-ok">—</span></div>
+          <span class="layer-card-val ok" id="layer-doc-ok">—</span>
+          <div class="layer-card-bar"><div class="layer-card-bar-fill neutral" id="layer-doc-bar-ok"></div></div>
+        </div>
+        <div id="debug-panel-ok" style="font-size:11px;font-family:monospace;color:#666;padding:10px 0;line-height:1.8;"></div>
       </div>
       <div class="spacer"></div>
-      <button class="btn-neon" onclick="resetApp()">admit — next person</button>
-      <button class="btn-ghost" onclick="goTo('screen-log')" style="margin-top:8px;">log entry</button>
+      <button class="btn-neon" onclick="resetApp()">admit, next person</button>
+      <button class="btn-ghost" onclick="goTo('screen-log')" style="margin-top:8px;">view session log</button>
     </div>
   </div>
 
@@ -161,9 +210,22 @@
         <div class="score-num warn" id="score-num-warn">—</div>
       </div>
       <div class="layers-box">
-        <div class="layer-row"><span class="layer-name">face match</span><span class="layer-val warn" id="layer-face-warn">—</span></div>
-        <div class="layer-row"><span class="layer-name">age check</span><span class="layer-val flag" id="layer-age-warn">—</span></div>
-        <div class="layer-row" style="border:none;"><span class="layer-name">document</span><span class="layer-val" id="layer-doc-warn">—</span></div>
+        <div class="layer-card" id="lcard-face-warn">
+          <div class="layer-card-top"><span class="layer-card-name">face match</span><span class="layer-card-score" id="layer-face-score-warn">—</span></div>
+          <span class="layer-card-val warn" id="layer-face-warn">—</span>
+          <div class="layer-card-bar"><div class="layer-card-bar-fill warn" id="layer-face-bar-warn"></div></div>
+        </div>
+        <div class="layer-card" id="lcard-age-warn">
+          <div class="layer-card-top"><span class="layer-card-name">age check</span><span class="layer-card-score" id="layer-age-score-warn">—</span></div>
+          <span class="layer-card-val flag" id="layer-age-warn">—</span>
+          <div class="layer-card-bar"><div class="layer-card-bar-fill flag" id="layer-age-bar-warn"></div></div>
+        </div>
+        <div class="layer-card" id="lcard-doc-warn">
+          <div class="layer-card-top"><span class="layer-card-name">document</span><span class="layer-card-score" id="layer-doc-score-warn">—</span></div>
+          <span class="layer-card-val" id="layer-doc-warn">—</span>
+          <div class="layer-card-bar"><div class="layer-card-bar-fill neutral" id="layer-doc-bar-warn"></div></div>
+        </div>
+        <div id="debug-panel-warn" style="font-size:11px;font-family:monospace;color:#666;padding:10px 0;line-height:1.8;"></div>
       </div>
       <div class="spacer"></div>
       <button class="btn-deny" onclick="resetApp()">deny entry</button>
@@ -174,6 +236,9 @@
   <!-- screen 6: log -->
   <div class="screen" id="screen-log">
     <div class="screen-inner">
+      <div class="top-nav-row">
+        <button class="btn-back" onclick="goTo('screen-home')">‹ back</button>
+      </div>
       <div class="screen-title">session log</div>
       <div class="screen-sub">tonight · madrid</div>
       <div id="log-list" class="log-list"></div>
