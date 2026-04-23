@@ -1,12 +1,12 @@
-#standard library
+# standard library
 import os
 
-#third-party
+# third-party
 import numpy as np
 from deepface import DeepFace
 
-#local
-from backend.config import MAX_AGE_GAP, WEIGHTS_DIR
+# local
+from backend.config import MAX_AGE_GAP
 from backend.utils.exceptions import FaceNotDetectedError, ModelInferenceError, InvalidImageError
 
 
@@ -51,7 +51,7 @@ class AgeEstimator:
             return float(result[0]["age"])
 
         except ValueError as e:
-            #retinaface found no face — enforce_detection=True raises ValueError
+            # retinaface found no face — enforce_detection=True raises ValueError
             raise FaceNotDetectedError(str(e))
 
         except Exception as e:
@@ -73,10 +73,8 @@ class AgeEstimator:
             ModelInferenceError: if age estimation fails
         """
         estimated_age = self._estimate_age(live_image)
-
         gap = abs(estimated_age - age_on_id)
-
-        #gap above MAX_AGE_GAP means estimated age is too different from id age
+        # gap above MAX_AGE_GAP means estimated age is too different from id age
         age_flag = gap > MAX_AGE_GAP
 
         return {
@@ -87,6 +85,7 @@ class AgeEstimator:
                 },
                 "consistency": {
                     "id_age": age_on_id,
+                    "estimated_age": round(estimated_age, 1),
                     "gap": round(gap, 1),
                     "flag": age_flag
                 }

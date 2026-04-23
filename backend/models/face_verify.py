@@ -1,12 +1,12 @@
-#standard library
+# standard library
 import os
 
-#third-party
+# third-party
 import numpy as np
 from deepface import DeepFace
 
-#local
-from backend.config import SIMILARITY_THRESHOLD, FACE_DETECTION_CONFIDENCE, WEIGHTS_DIR
+# local
+from backend.config import SIMILARITY_THRESHOLD
 from backend.utils.exceptions import FaceNotDetectedError, ModelInferenceError, InvalidImageError
 
 
@@ -50,7 +50,7 @@ class FaceVerifier:
             )
             return np.array(embedding_result[0]["embedding"])
         except ValueError as e:
-            #retinaface found no face — enforce_detection=True raises ValueError
+            # retinaface found no face — enforce_detection=True raises ValueError
             raise FaceNotDetectedError(str(e))
         except Exception as e:
             raise ModelInferenceError(str(e))
@@ -72,9 +72,12 @@ class FaceVerifier:
         """
         id_embedding = self._get_embedding(id_image)
         live_embedding = self._get_embedding(live_image)
-        #ArcFace embeddings are L2-normalized so dot product equals cosine similarity
-        similarity_score = float(np.dot(id_embedding, live_embedding))
-        #score below threshold means faces are too different to confirm identity
+        # ArcFace embeddings are L2-normalized so dot product equals cosine similarity
+        # compute proper cosine similarity — normalize both vectors first
+        norm_id = np.linalg.norm(id_embedding)
+        norm_live = np.linalg.norm(live_embedding)
+        similarity_score = float(np.dot(id_embedding, live_embedding) / (norm_id * norm_live))
+        # score below threshold means faces are too different to confirm identity
         verdict = "verified" if similarity_score >= SIMILARITY_THRESHOLD else "suspicious"
         return {
             "feature": "face_verification",
