@@ -1,4 +1,4 @@
-# FakeID — AI-Powered Identity Verification
+# FakeID: AI-Powered Identity Verification
 
 > *The night is young, but not too young.*
 
@@ -22,7 +22,7 @@ FakeID verifies identity at nightclub entrances using a three-feature pipeline:
 
 - **Feature 1 — Face Verification:** Compares the face on the ID document against a live photo using RetinaFace detection and ArcFace embeddings
 - **Feature 2 — Age Estimation:** Estimates age from a live photo using the DEX model and checks consistency with the age declared on the ID
-- **Feature 3 — Document Authenticity:** 4-layer pipeline (perspective correction → YOLO zone detection → geometric analysis → EfficientNet-B0 classifier) to detect fake Spanish DNI documents
+- **Feature 3 — Document Authenticity:** 4-layer pipeline (perspective correction, YOLO zone detection, geometric analysis, EfficientNet-B0 classifier) to detect fake Spanish DNI documents
 
 Prototype targets Spanish DNI 3.0 format. Dataset: MIDV-2020 (Bulatov et al., Computer Optics, 2022).
 
@@ -67,24 +67,32 @@ To access from a phone on the same network, find your machine's local IP address
 
 ## Project Structure
 
-| Path | Description |
-|------|-------------|
-| `backend/models/doc_auth.py` | Feature 3 — 4-layer document authenticity pipeline |
-| `backend/models/face_verify.py` | Feature 1 — ArcFace face verification |
-| `backend/models/age_model.py` | Feature 2 — DEX age estimation |
-| `backend/routes/document.py` | POST /api/check-document |
-| `backend/routes/verify.py` | POST /api/verify-face |
-| `backend/routes/age.py` | POST /api/estimate-age |
-| `backend/config.py` | All thresholds and constants |
-| `backend/dependencies.py` | Model loading at startup |
-| `backend/schemas.py` | Pydantic request models |
-| `frontend/index.html` | Single-page mobile-first UI |
-| `frontend/camera.js` | Camera capture and API calls |
-| `data/templates/spain.json` | Scan reference coordinates (tolerance 0.08) |
-| `data/templates/spain_photo.json` | Photo reference coordinates (tolerance 0.25) |
-| `notebooks/feature3_eval.ipynb` | Feature 3 evaluation — YOLO + EfficientNet metrics |
-| `notebooks/feature1_eval.ipynb` | Feature 1 evaluation — face verification metrics |
-| `notebooks/feature2_eval.ipynb` | Feature 2 evaluation — age estimation metrics |
+- **backend/**
+  - **models/**
+    - `doc_auth.py` — Feature 3: 4-layer document authenticity pipeline
+    - `face_verify.py` — Feature 1: ArcFace face verification
+    - `age_model.py` — Feature 2: DEX age estimation
+  - **routes/**
+    - `document.py` — POST /api/check-document
+    - `verify.py` — POST /api/verify-face
+    - `age.py` — POST /api/estimate-age
+  - `config.py` — all thresholds and constants
+  - `dependencies.py` — model loading at startup
+  - `schemas.py` — Pydantic request models
+- **frontend/**
+  - `index.html` — single-page mobile-first UI
+  - `style.css`
+  - `camera.js`
+- **data/templates/**
+  - `spain.json` — scan reference coordinates (tolerance 0.08)
+  - `spain_photo.json` — photo reference coordinates (tolerance 0.25)
+- **notebooks/**
+  - `feature3_eval.ipynb` — Feature 3 evaluation
+  - `feature1_eval.ipynb` — Feature 1 evaluation
+  - `feature2_eval.ipynb` — Feature 2 evaluation
+- `requirements.txt`
+- `README.md`
+
 
 ## API Endpoints
 
@@ -131,14 +139,30 @@ Final verdict: `real` / `fake` / `suspicious`
 ## Known Limitations
 
 - Prototype supports Spanish DNI 3.0 only
-- 18% false positive rate on portrait-orientation phone photos where the card occupies less than 30% of the frame — mitigated by the frontend retake gate
+- 18% false positive rate on portrait-orientation phone photos where the card occupies less than 30% of the frame, mitigated by the frontend retake gate
 - EfficientNet was trained on full original images; a retrained version on standardised crops is documented as future work
-- DeepFace weights download automatically on first use — first inference request will be slow
+- DeepFace weights download automatically on first use; first inference request will be slow
 
 ## Dataset
 
-K.B. Bulatov, E.V. Emelianova, D.V. Tropin, N.S. Skoryukina, Y.S. Chernyshova, A.V. Konev, A.S. Usilin.
+**MIDV-2020** — K.B. Bulatov, E.V. Emelianova, D.V. Tropin, N.S. Skoryukina, Y.S. Chernyshova, A.V. Konev, A.S. Usilin.
 *MIDV-2020: A Comprehensive Benchmark Dataset for Identity Document Analysis.*
 Computer Optics, 2022. DOI: 10.18287/2412-6179-CO-1006
+
+**How to obtain the dataset:**
+
+1. Visit the dataset page: http://l3i-share.univ-lr.fr/MIDV2020/midv2020.html
+2. Fill in the registration form to request access
+3. You will receive download credentials by email
+4. Use FileZilla or any SFTP client to connect to `sftp://l3i-share.univ-lr.fr`
+5. Download the Spanish DNI subset (`esp_id`)
+
+**Folders used in this project:**
+
+| Folder | Contents | Used for |
+|--------|----------|----------|
+| `scan_upright/images/esp_id/` | 100 flatbed scan images | YOLO training + EfficientNet training |
+| `photo/images/esp_id/` | 100 phone photo images | YOLO training + EfficientNet training |
+| `templates/images/esp_id/` | 100 clean template images | Geometric analysis reference only |
 
 Raw dataset images are not included in this repository and must not be redistributed. Academic use only.
