@@ -434,7 +434,7 @@ function showResult(faceResult, ageResult, docResult, ageOnId) {
             document.getElementById('layer-doc-ok').textContent = docLabel;
             document.getElementById('layer-doc-score-ok').textContent = docScoreText;
             const dbg = document.getElementById('debug-panel-ok');
-            if (dbg) { dbg.textContent = `classifier: ${docScoreText} · deviation: ${deviationText} · zones: ${zonesText}`; }
+            if (dbg) dbg.textContent = `classifier: ${docScoreText} · deviation: ${deviationText} · zones: ${zonesText}`;
             setTimeout(() => { document.getElementById('lcard-face-ok').classList.add('visible'); setTimeout(() => { document.getElementById('layer-face-bar-ok').style.width = `${faceScorePercent}%`; }, 150); }, 300);
             setTimeout(() => { document.getElementById('lcard-age-ok').classList.add('visible'); setTimeout(() => { document.getElementById('layer-age-bar-ok').style.width = `${ageBarWidth}%`; }, 150); }, 550);
             setTimeout(() => { document.getElementById('lcard-doc-ok').classList.add('visible'); setTimeout(() => { document.getElementById('layer-doc-bar-ok').style.width = `${docBarWidth}%`; }, 150); launchConfetti(); }, 800);
@@ -455,7 +455,7 @@ function showResult(faceResult, ageResult, docResult, ageOnId) {
             document.getElementById('layer-doc-warn').textContent = docLabel;
             document.getElementById('layer-doc-score-warn').textContent = docScoreText;
             const dbg = document.getElementById('debug-panel-warn');
-            if (dbg) { dbg.textContent = `classifier: ${docScoreText} · deviation: ${deviationText} · zones: ${zonesText}`; }
+            if (dbg) dbg.textContent = `classifier: ${docScoreText} · deviation: ${deviationText} · zones: ${zonesText}`;
             setTimeout(() => { document.getElementById('lcard-face-warn').classList.add('visible'); setTimeout(() => { document.getElementById('layer-face-bar-warn').style.width = `${faceScorePercent}%`; }, 150); }, 300);
             setTimeout(() => { document.getElementById('lcard-age-warn').classList.add('visible'); setTimeout(() => { document.getElementById('layer-age-bar-warn').style.width = `${ageBarWidth}%`; }, 150); }, 550);
             setTimeout(() => { document.getElementById('lcard-doc-warn').classList.add('visible'); setTimeout(() => { document.getElementById('layer-doc-bar-warn').style.width = `${docBarWidth}%`; }, 150); }, 800);

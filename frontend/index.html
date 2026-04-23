@@ -14,15 +14,15 @@
   <div class="flash-overlay" id="flash-overlay"></div>
   <canvas id="particle-canvas"></canvas>
 
+<div class="club-lights">
+    <div class="light light-1"></div>
+    <div class="light light-2"></div>
+    <div class="light light-3"></div>
+    <div class="light light-4"></div>
+  </div>
+
   <!-- screen 1: home -->
   <div class="screen active" id="screen-home">
-    <div class="home-video-overlay"></div>
-    <div class="club-lights">
-      <div class="light light-1"></div>
-      <div class="light light-2"></div>
-      <div class="light light-3"></div>
-      <div class="light light-4"></div>
-    </div>
     <div class="screen-inner home-inner">
       <div class="spacer"></div>
       <div class="home-logo-wrap">
@@ -80,7 +80,7 @@
         <button class="btn-retake" id="btn-retake-id">retake</button>
         <button class="btn-use" id="btn-use-id">use photo</button>
       </div>
-      <div class="doc-pill">DNI · NIE · Passport</div>
+      <div class="doc-pill">DNI</div>
       <div class="spacer"></div>
       <button class="btn-neon" id="btn-capture-id" onclick="startCamera('id')">open camera</button>
       <button class="btn-ghost" onclick="useGallery('id')" style="margin-top:8px;">use gallery / video</button>
@@ -115,7 +115,7 @@
               <path d="M4 22c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="#2a2a4a" stroke-width="1.2" stroke-linecap="round"/>
             </svg>
           </div>
-          <div class="cam-label">enter age first then open camera</div>
+          <div class="cam-label">Enter age first, then open camera</div>
         </div>
       </div>
       <div id="retake-row-live" class="retake-row" style="display:none;">
@@ -171,8 +171,8 @@
     <div class="screen-inner">
       <div id="confetti-container"></div>
       <div class="result-card ok">
-        <div class="result-label ok">verified</div>
-        <div class="result-sub">identity confirmed</div>
+        <div class="result-label ok">Verified</div>
+        <div class="result-sub">Identity confirmed</div>
         <div class="score-bar"><div class="score-fill ok" id="score-fill-ok"></div></div>
         <div class="score-num ok" id="score-num-ok">—</div>
       </div>
@@ -192,10 +192,10 @@
           <span class="layer-card-val ok" id="layer-doc-ok">—</span>
           <div class="layer-card-bar"><div class="layer-card-bar-fill neutral" id="layer-doc-bar-ok"></div></div>
         </div>
-        <div id="debug-panel-ok" style="font-size:11px;font-family:monospace;color:#666;padding:10px 0;line-height:1.8;"></div>
+        <div id="debug-panel-ok" style="font-size:11px;font-family:monospace;color:#666;padding:8px 0;line-height:1.8;"></div>
       </div>
       <div class="spacer"></div>
-      <button class="btn-neon" onclick="resetApp()">admit, next person</button>
+      <button class="btn-neon" onclick="resetApp()">Admit, next person</button>
       <button class="btn-ghost" onclick="goTo('screen-log')" style="margin-top:8px;">view session log</button>
     </div>
   </div>
@@ -225,7 +225,7 @@
           <span class="layer-card-val" id="layer-doc-warn">—</span>
           <div class="layer-card-bar"><div class="layer-card-bar-fill neutral" id="layer-doc-bar-warn"></div></div>
         </div>
-        <div id="debug-panel-warn" style="font-size:11px;font-family:monospace;color:#666;padding:10px 0;line-height:1.8;"></div>
+        <div id="debug-panel-warn" style="font-size:11px;font-family:monospace;color:#666;padding:8px 0;line-height:1.8;"></div>
       </div>
       <div class="spacer"></div>
       <button class="btn-deny" onclick="resetApp()">deny entry</button>
