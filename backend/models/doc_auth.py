@@ -9,6 +9,8 @@ import torch
 import torch.nn as nn
 from torchvision import models
 from ultralytics import YOLO
+from ultralytics import YOLOWorld
+
 
 # local
 from backend.config import (
@@ -52,7 +54,11 @@ class DocumentAuthenticator:
                 )
 
         self.zone_detector = self._load_zone_detector(yolo_path)
+        self.card_detector = YOLOWorld("yolov8s-world.pt")
+        self.card_detector.set_classes(["id card", "credit card", "identity document", "card"])
         self.classifier = self._load_classifier(efficientnet_path)
+
+
 
         template_path = os.path.join(TEMPLATES_DIR, "spain.json")
         with open(template_path, "r") as f:
@@ -114,36 +120,75 @@ class DocumentAuthenticator:
 
     def _correct_perspective(self, image: np.ndarray) -> np.ndarray:
         """
-        Detect document edges and correct perspective distortion.
-        Best-effort: returns original image if no document contour is found.
+        Detect document boundary using YOLO-World zero-shot detection and crop to card.
+        Falls back to Canny contour detection, then centre crop if neither works.
 
         Args:
             image: raw input image, shape (H, W, 3), BGR format
 
         Returns:
-            perspective-corrected image, or original image if correction not possible
+            cropped card image ready for zone detection
         """
         try:
-            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            # primary: YOLO-World zero-shot card detection
+            results = self.card_detector(image, verbose=False, conf=0.1)
+            boxes = results[0].boxes
+
+            if boxes is not None and len(boxes) > 0:
+                best_idx = int(boxes.conf.argmax())
+                x1, y1, x2, y2 = boxes.xyxy[best_idx].cpu().numpy().astype(int)
+                pad = 30
+                h, w = image.shape[:2]
+                x1 = max(0, x1 - pad)
+                y1 = max(0, y1 - pad)
+                x2 = min(w, x2 + pad)
+                y2 = min(h, y2 + pad)
+                return image[y1:y2, x1:x2]
+
+        except Exception:
+            pass
+
+        try:
+            # secondary: Canny contour detection
+            h_orig, w_orig = image.shape[:2]
+            scale = 1000 / w_orig
+            resized = cv2.resize(image, (1000, int(h_orig * scale)))
+
+            gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
             blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-            edges = cv2.Canny(blurred, 75, 200)
+            edges = cv2.Canny(blurred, 30, 100)
+
+            kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
+            edges = cv2.dilate(edges, kernel, iterations=5)
 
             contours, _ = cv2.findContours(
                 edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
             )
 
-            if not contours:
-                return image
+            if contours:
+                largest_contour = max(contours, key=cv2.contourArea)
+                area = cv2.contourArea(largest_contour)
+                total_area = resized.shape[0] * resized.shape[1]
 
-            largest_contour = max(contours, key=cv2.contourArea)
-            perimeter = cv2.arcLength(largest_contour, True)
-            approximated = cv2.approxPolyDP(largest_contour, 0.02 * perimeter, True)
+                if 0.15 <= area / total_area <= 0.85:
+                    perimeter = cv2.arcLength(largest_contour, True)
+                    for epsilon_factor in [0.02, 0.03, 0.04, 0.05, 0.06, 0.08, 0.10]:
+                        approximated = cv2.approxPolyDP(
+                            largest_contour, epsilon_factor * perimeter, True
+                        )
+                        if len(approximated) == 4:
+                            approximated = (approximated / scale).astype(np.float32)
+                            return self._apply_perspective_transform(image, approximated)
 
-            if len(approximated) == 4:
-                return self._apply_perspective_transform(image, approximated)
+        except Exception:
+            pass
 
-            return image
-
+        # final fallback: centre crop
+        try:
+            h, w = image.shape[:2]
+            margin_h = int(h * 0.15)
+            margin_w = int(w * 0.15)
+            return image[margin_h:h - margin_h, margin_w:w - margin_w]
         except Exception:
             return image
 
@@ -194,6 +239,7 @@ class DocumentAuthenticator:
         Returns:
             ordered corners, shape (4, 2)
         """
+        corners = corners.reshape(4, 2)
         ordered = np.zeros((4, 2), dtype=np.float32)
 
         # top-left has smallest sum, bottom-right has largest sum
@@ -201,10 +247,18 @@ class DocumentAuthenticator:
         ordered[0] = corners[np.argmin(sums)]
         ordered[2] = corners[np.argmax(sums)]
 
-        # top-right has smallest diff, bottom-left has largest diff
-        diffs = np.diff(corners, axis=1)
-        ordered[1] = corners[np.argmin(diffs)]
-        ordered[3] = corners[np.argmax(diffs)]
+        # remaining two points
+        remaining = corners[
+            np.where((corners != ordered[0]).any(axis=1) & (corners != ordered[2]).any(axis=1))
+        ]
+
+        # top-right has smaller y, bottom-left has larger y
+        if remaining[0][1] < remaining[1][1]:
+            ordered[1] = remaining[0]
+            ordered[3] = remaining[1]
+        else:
+            ordered[1] = remaining[1]
+            ordered[3] = remaining[0]
 
         return ordered
 
