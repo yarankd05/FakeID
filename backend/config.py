@@ -11,7 +11,8 @@ FACE_DETECTION_CONFIDENCE: float = 0.9     # min RetinaFace confidence to accept
 MAX_AGE_GAP: int = 5                        # gap in years before consistency flag raised
 
 # Document authenticity
-GEOMETRIC_TOLERANCE: float = 0.15          # max deviation from country template
+GEOMETRIC_TOLERANCE_SCAN: float = 0.08     # max deviation for flatbed scans (tight — consistent crops)
+GEOMETRIC_TOLERANCE_PHOTO: float = 0.25    # max deviation for phone photos (loose — high positional variance)
 CLASSIFIER_REAL_THRESHOLD: float = 0.7     # EfficientNet score above this → real
 LOW_CONFIDENCE_BOUNDARY: float = 0.6       # scores 0.6-0.7 → real but low_confidence: true
                                             # CLASSIFIER_REAL_THRESHOLD = real/fake decision
