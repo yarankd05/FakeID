@@ -1,25 +1,23 @@
 # standard library
 import os
 import json
+from pathlib import Path
+
 
 # third-party
 import cv2
 import numpy as np
-import torch
-import torch.nn as nn
-from torchvision import models
 from ultralytics import YOLO
 from ultralytics import YOLOWorld
 
-
 # local
 from backend.config import (
-    CLASSIFIER_REAL_THRESHOLD,
-    LOW_CONFIDENCE_BOUNDARY,
     TEMPLATES_DIR,
     GEOMETRIC_TOLERANCE_SCAN,
     GEOMETRIC_TOLERANCE_PHOTO,
+    MRZ_MIN_AGE,
 )
+from backend.models.mrz_detector import verify_passport
 from backend.utils.exceptions import (
     ZoneDetectionError,
     ModelInferenceError,
@@ -36,28 +34,28 @@ class DocumentAuthenticator:
     Trained on Spanish DNI 3.0 format using MIDV-2020 dataset.
     """
 
-    def __init__(self, yolo_path: str, efficientnet_path: str) -> None:
-        """
-        Load all models at startup.
+    def __init__(self, yolo_path: str, mrz_model: object, mrz_reader: object) -> None:
+        """Load all models at startup.
 
         Args:
-            yolo_path: absolute path to YOLO zone detector weights file
-            efficientnet_path: absolute path to EfficientNet classifier weights file
+            yolo_path:  Absolute path to YOLO zone detector weights file.
+            mrz_model:  Loaded YOLOv8 MRZ detection model.
+            mrz_reader: Loaded EasyOCR reader instance.
 
         Raises:
-            FileNotFoundError: if either weights file is missing
+            FileNotFoundError: if YOLO weights file is missing.
         """
-        for path in (yolo_path, efficientnet_path):
-            if not os.path.exists(path):
-                raise FileNotFoundError(
-                    f"Weights file not found: {path}. "
-                    f"Download and place in backend/weights/ before starting the server."
-                )
+        if not os.path.exists(yolo_path):
+            raise FileNotFoundError(
+                f"Weights file not found: {yolo_path}. "
+                f"Download and place in backend/weights/ before starting the server."
+            )
 
         self.zone_detector = self._load_zone_detector(yolo_path)
         self.card_detector = YOLOWorld("yolov8s-world.pt")
         self.card_detector.set_classes(["id card", "credit card", "identity document", "card"])
-        self.classifier = self._load_classifier(efficientnet_path)
+        self.mrz_model  = mrz_model
+        self.mrz_reader = mrz_reader
 
         with open(os.path.join(TEMPLATES_DIR, "spain.json"), "r") as f:
             self.template_scan: dict = json.load(f)
@@ -76,37 +74,21 @@ class DocumentAuthenticator:
         """
         return YOLO(yolo_path)
 
-    def _load_classifier(self, efficientnet_path: str) -> nn.Module:
-        """
-        Load EfficientNet-B0 classifier weights from disk.
-        Replaces final classifier head with a 2-class linear layer.
-
-        Args:
-            efficientnet_path: absolute path to EfficientNet weights file
-
-        Returns:
-            EfficientNet-B0 model in eval mode
-        """
-        model = models.efficientnet_b0(weights=None)
-        in_features = model.classifier[1].in_features
-        model.classifier[1] = nn.Linear(in_features, 2)
-        model.load_state_dict(torch.load(efficientnet_path, map_location="cpu"))
-        model.eval()
-        return model
-
-    def run(self, image: np.ndarray) -> dict:
+    def run(self, image: np.ndarray, image_path: Path, min_age: int = 18) -> dict:
         """
         Run full document authenticity pipeline.
 
         Args:
-            image: raw ID document image, shape (H, W, 3), BGR format
+            image:      raw ID document image, shape (H, W, 3), BGR format
+            image_path: path to the document image file
+            min_age:    minimum required age for entry
 
         Returns:
             dict matching Feature 3 response shape from RULES.md Section 1.2
 
         Raises:
             ZoneDetectionError: if YOLO detects zero zones
-            ModelInferenceError: if EfficientNet inference fails
+            ModelInferenceError: if MRZ inference fails
         """
         h, w = image.shape[:2]
         aspect = w / h
@@ -138,16 +120,16 @@ class DocumentAuthenticator:
                         "score": 0.0,
                         "label": "fake",
                         "low_confidence": False,
+                        "mrz_detail": {"verdict": "FAKE", "reason": "could not detect MRZ zone"},
                     },
                 },
             }
 
         partial_detection = not _ALL_ZONES.issubset(detected_zones.keys())
-
         template = self.template_scan if is_scan else self.template_photo
         tolerance = GEOMETRIC_TOLERANCE_SCAN if is_scan else GEOMETRIC_TOLERANCE_PHOTO
         geometry = self._analyze_geometry(detected_zones, template, tolerance)
-        classification = self._classify(image, partial_detection)
+        classification = self._classify(image_path, partial_detection, min_age)
 
         return self._build_response(detected_zones, geometry, classification, partial_detection)
 
@@ -163,14 +145,8 @@ class DocumentAuthenticator:
             cropped card image ready for zone detection
         """
         try:
-            # primary: YOLO-World zero-shot card detection (phone photos only)
-            #skip for scans — A4 aspect ratio is outside phone photo range (1.1–2.2)
             h, w = image.shape[:2]
             aspect = w / h
-            # ID card aspect ratio is ~1.586 (85.6mm x 54mm)
-            # phone photos framed around the card are roughly 1.2–2.0
-            # A4 scans are ~0.707 (portrait) or ~1.414 (landscape) — outside card range
-            # only run YOLO-World if image looks like a phone photo framed around a card
             if 1.1 <= aspect <= 2.2:
                 results = self.card_detector(image, verbose=False, conf=0.1)
                 boxes = results[0].boxes
@@ -189,7 +165,6 @@ class DocumentAuthenticator:
             pass
 
         try:
-            # secondary: Canny contour detection
             h_orig, w_orig = image.shape[:2]
             scale = 1000 / w_orig
             resized = cv2.resize(image, (1000, int(h_orig * scale)))
@@ -223,7 +198,6 @@ class DocumentAuthenticator:
         except Exception:
             pass
 
-        # final fallback: centre crop
         try:
             h, w = image.shape[:2]
             margin_h = int(h * 0.15)
@@ -282,17 +256,14 @@ class DocumentAuthenticator:
         corners = corners.reshape(4, 2)
         ordered = np.zeros((4, 2), dtype=np.float32)
 
-        # top-left has smallest sum, bottom-right has largest sum
         sums = corners.sum(axis=1)
         ordered[0] = corners[np.argmin(sums)]
         ordered[2] = corners[np.argmax(sums)]
 
-        # remaining two points
         remaining = corners[
             np.where((corners != ordered[0]).any(axis=1) & (corners != ordered[2]).any(axis=1))
         ]
 
-        # top-right has smaller y, bottom-left has larger y
         if remaining[0][1] < remaining[1][1]:
             ordered[1] = remaining[0]
             ordered[3] = remaining[1]
@@ -318,7 +289,6 @@ class DocumentAuthenticator:
             ZoneDetectionError: if zero zones are detected
         """
         results = self.zone_detector(image, verbose=False, conf=0.15)
-
 
         best_per_class: dict[str, dict] = {}
         for result in results:
@@ -379,7 +349,6 @@ class DocumentAuthenticator:
         deviation_score = float(np.mean(deviations))
         within_tolerance = deviation_score <= tolerance
 
-        # require at least 2 detected zones and tolerance met to claim a match
         country_matched = "spain" if len(detected_zones) >= 2 and within_tolerance else "unknown"
 
         return {
@@ -388,54 +357,36 @@ class DocumentAuthenticator:
             "within_tolerance": within_tolerance,
         }
 
-    def _classify(self, image: np.ndarray, partial_detection: bool) -> dict:
-        """
-        Run EfficientNet-B0 binary classifier on document image.
+    def _classify(self, image_path: Path, partial_detection: bool, min_age: int = 18) -> dict:
+        """Run MRZ verification pipeline on document image.
 
         Args:
-            image: perspective-corrected document image, BGR format
-            partial_detection: True if fewer than 3 zones were detected
+            image_path:        Path to the document image file.
+            partial_detection: True if fewer than 3 zones were detected.
+            min_age:           Minimum required age for entry.
 
         Returns:
-            dict with score (float), label ("real"/"fake"), and low_confidence (bool)
-
-        Raises:
-            ModelInferenceError: if any step of inference fails
+            Dict with score (float), label ('real'/'fake'/'underage'/'error'),
+            and low_confidence (bool).
         """
-        try:
-            # convert BGR to RGB — OpenCV uses BGR, ImageNet normalisation expects RGB
-            rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            resized = cv2.resize(rgb_image, (224, 224))
+        result = verify_passport(
+            image_path=image_path,
+            model=self.mrz_model,
+            reader=self.mrz_reader,
+            min_age=min_age,
+        )
 
-            tensor = torch.from_numpy(resized).float().permute(2, 0, 1) / 255.0
-            mean = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1)
-            std = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
-            tensor = (tensor - mean) / std
-            tensor = tensor.unsqueeze(0)
+        verdict = result.get("verdict", "ERROR")
+        label = verdict.lower() if verdict in ("REAL", "FAKE", "UNDERAGE") else "error"
+        low_confidence = partial_detection or verdict == "ERROR"
+        score = 1.0 if verdict == "REAL" else 0.0
 
-            with torch.no_grad():
-                logits = self.classifier(tensor)
-                probabilities = torch.softmax(logits, dim=1)
-                score = float(probabilities[0, 1].item())
-
-            if score < LOW_CONFIDENCE_BOUNDARY:
-                label = "fake"
-                low_confidence = False
-            elif score < CLASSIFIER_REAL_THRESHOLD:
-                label = "real"
-                low_confidence = True
-            else:
-                label = "real"
-                low_confidence = False
-
-            # partial zone detection means less reliable classification
-            if partial_detection:
-                low_confidence = True
-
-            return {"score": round(score, 4), "label": label, "low_confidence": low_confidence}
-
-        except Exception as e:
-            raise ModelInferenceError("Model inference failed") from e
+        return {
+            "score": score,
+            "label": label,
+            "low_confidence": low_confidence,
+            "mrz_detail": result,
+        }
 
     def _build_response(
         self,
