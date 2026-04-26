@@ -79,14 +79,16 @@ class DocumentAuthenticator:
         Run full document authenticity pipeline.
 
         Args:
-            image: raw ID document image, shape (H, W, 3), BGR format
+            image:      raw ID document image, shape (H, W, 3), BGR format
+            image_path: path to the document image file
+            min_age:    minimum required age for entry
 
         Returns:
             dict matching Feature 3 response shape from RULES.md Section 1.2
 
         Raises:
             ZoneDetectionError: if YOLO detects zero zones
-            ModelInferenceError: if EfficientNet inference fails
+            ModelInferenceError: if MRZ inference fails
         """
         h, w = image.shape[:2]
         aspect = w / h
@@ -99,7 +101,29 @@ class DocumentAuthenticator:
         try:
             detected_zones = self._detect_zones(image)
         except ZoneDetectionError:
-            detected_zones = {}
+            return {
+                "feature": "document_authenticity",
+                "layers": {
+                    "perspective": {"corrected": True},
+                    "zone_detection": {
+                        "photo_zone": False,
+                        "id_number": False,
+                        "text_fields": False,
+                        "all_zones_detected": False,
+                    },
+                    "geometric_analysis": {
+                        "country_matched": "unknown",
+                        "deviation_score": 1.0,
+                        "within_tolerance": False,
+                    },
+                    "classifier": {
+                        "score": 0.0,
+                        "label": "fake",
+                        "low_confidence": False,
+                        "mrz_detail": {"verdict": "FAKE", "reason": "could not detect MRZ zone"},
+                    },
+                },
+            }
 
         partial_detection = not _ALL_ZONES.issubset(detected_zones.keys())
         template = self.template_scan if is_scan else self.template_photo
@@ -121,14 +145,8 @@ class DocumentAuthenticator:
             cropped card image ready for zone detection
         """
         try:
-            # primary: YOLO-World zero-shot card detection (phone photos only)
-            #skip for scans — A4 aspect ratio is outside phone photo range (1.1–2.2)
             h, w = image.shape[:2]
             aspect = w / h
-            # ID card aspect ratio is ~1.586 (85.6mm x 54mm)
-            # phone photos framed around the card are roughly 1.2–2.0
-            # A4 scans are ~0.707 (portrait) or ~1.414 (landscape) — outside card range
-            # only run YOLO-World if image looks like a phone photo framed around a card
             if 1.1 <= aspect <= 2.2:
                 results = self.card_detector(image, verbose=False, conf=0.1)
                 boxes = results[0].boxes
@@ -147,7 +165,6 @@ class DocumentAuthenticator:
             pass
 
         try:
-            # secondary: Canny contour detection
             h_orig, w_orig = image.shape[:2]
             scale = 1000 / w_orig
             resized = cv2.resize(image, (1000, int(h_orig * scale)))
@@ -181,7 +198,6 @@ class DocumentAuthenticator:
         except Exception:
             pass
 
-        # final fallback: centre crop
         try:
             h, w = image.shape[:2]
             margin_h = int(h * 0.15)
@@ -240,17 +256,14 @@ class DocumentAuthenticator:
         corners = corners.reshape(4, 2)
         ordered = np.zeros((4, 2), dtype=np.float32)
 
-        # top-left has smallest sum, bottom-right has largest sum
         sums = corners.sum(axis=1)
         ordered[0] = corners[np.argmin(sums)]
         ordered[2] = corners[np.argmax(sums)]
 
-        # remaining two points
         remaining = corners[
             np.where((corners != ordered[0]).any(axis=1) & (corners != ordered[2]).any(axis=1))
         ]
 
-        # top-right has smaller y, bottom-left has larger y
         if remaining[0][1] < remaining[1][1]:
             ordered[1] = remaining[0]
             ordered[3] = remaining[1]
@@ -276,7 +289,6 @@ class DocumentAuthenticator:
             ZoneDetectionError: if zero zones are detected
         """
         results = self.zone_detector(image, verbose=False, conf=0.15)
-
 
         best_per_class: dict[str, dict] = {}
         for result in results:
@@ -337,7 +349,6 @@ class DocumentAuthenticator:
         deviation_score = float(np.mean(deviations))
         within_tolerance = deviation_score <= tolerance
 
-        # require at least 2 detected zones and tolerance met to claim a match
         country_matched = "spain" if len(detected_zones) >= 2 and within_tolerance else "unknown"
 
         return {
@@ -352,6 +363,7 @@ class DocumentAuthenticator:
         Args:
             image_path:        Path to the document image file.
             partial_detection: True if fewer than 3 zones were detected.
+            min_age:           Minimum required age for entry.
 
         Returns:
             Dict with score (float), label ('real'/'fake'/'underage'/'error'),
