@@ -101,29 +101,7 @@ class DocumentAuthenticator:
         try:
             detected_zones = self._detect_zones(image)
         except ZoneDetectionError:
-            return {
-                "feature": "document_authenticity",
-                "layers": {
-                    "perspective": {"corrected": True},
-                    "zone_detection": {
-                        "photo_zone": False,
-                        "id_number": False,
-                        "text_fields": False,
-                        "all_zones_detected": False,
-                    },
-                    "geometric_analysis": {
-                        "country_matched": "unknown",
-                        "deviation_score": 1.0,
-                        "within_tolerance": False,
-                    },
-                    "classifier": {
-                        "score": 0.0,
-                        "label": "fake",
-                        "low_confidence": False,
-                        "mrz_detail": {"verdict": "FAKE", "reason": "could not detect MRZ zone"},
-                    },
-                },
-            }
+            detected_zones = {}
 
         partial_detection = not _ALL_ZONES.issubset(detected_zones.keys())
         template = self.template_scan if is_scan else self.template_photo
@@ -147,7 +125,7 @@ class DocumentAuthenticator:
         try:
             h, w = image.shape[:2]
             aspect = w / h
-            if 1.1 <= aspect <= 2.2:
+            if 1.1 <= aspect <= 2.2 and long_side >= 1500:
                 results = self.card_detector(image, verbose=False, conf=0.1)
                 boxes = results[0].boxes
 

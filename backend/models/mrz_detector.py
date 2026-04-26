@@ -28,6 +28,10 @@ def detect_mrz(
     Returns:
         List of MRZ text lines, or None if not detected.
     """
+    h, w = img.shape[:2]
+    if max(h, w) > 1920:
+        scale = 1920 / max(h, w)
+        img = cv2.resize(img, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
     results = model(img)[0]
 
     if len(results.boxes) == 0:
