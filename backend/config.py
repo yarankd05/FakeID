@@ -29,3 +29,9 @@ SUPPORTED_COUNTRIES: list[str] = ["spain"]  # prototype targets Spain only — e
 # Paths — always absolute, always safe
 WEIGHTS_DIR: str = str(BASE_DIR / "backend" / "weights")
 TEMPLATES_DIR: str = str(BASE_DIR / "data" / "templates")
+
+# MRZ verification
+MRZ_MODEL_PATH: Path = BASE_DIR / "backend" / "weights" / "best_mrz_v2.pt"
+MRZ_MIN_LINE_LENGTH: int = 20
+MRZ_PADDING: int = 120
+MRZ_MIN_AGE: int = 18
