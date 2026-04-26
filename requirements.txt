@@ -98,3 +98,5 @@ uvicorn==0.45.0
 Werkzeug==3.1.8
 wheel==0.47.0
 wrapt==2.1.2
+easyocr
+

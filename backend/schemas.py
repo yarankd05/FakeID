@@ -15,4 +15,5 @@ class AgeRequest(BaseModel):
 
 class DocumentRequest(BaseModel):
     """Request body for document authenticity endpoint."""
-    id_image: str       # base64 encoded JPEG of ID document
+    id_image: str           # base64 encoded JPEG of ID document
+    min_age: int = 18       # minimum age for entry, default 18
