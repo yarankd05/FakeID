@@ -5,23 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <meta name="apple-mobile-web-app-title" content="VALIDO" />
   <meta name="theme-color" content="#050508" />
-  <title>FakeID</title>
+  <title>VALIDO</title>
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
 
   <div class="flash-overlay" id="flash-overlay"></div>
-  <canvas id="particle-canvas"></canvas>
+  <canvas id="aurora-canvas"></canvas>
 
-<div class="club-lights">
-    <div class="light light-1"></div>
-    <div class="light light-2"></div>
-    <div class="light light-3"></div>
-    <div class="light light-4"></div>
-  </div>
-
-  <!-- screen 1: home -->
   <div class="screen active" id="screen-home">
     <div class="screen-inner home-inner">
       <div class="spacer"></div>
@@ -30,9 +23,7 @@
           <div class="eye-home"></div>
           <div class="eye-home" style="animation-delay:0.15s;"></div>
         </div>
-        <div class="home-title">FAKE<span class="neon">ID</span></div>
-        <div class="home-sub">madrid · identity verification</div>
-        <div class="home-location">serrano 43</div>
+        <div class="home-title">V<span class="neon">ALIDO</span></div>
       </div>
       <div class="spacer"></div>
       <div class="ready-pill">
@@ -40,12 +31,17 @@
         <span>system ready</span>
       </div>
       <div class="spacer"></div>
-      <button class="btn-neon btn-neon-home" onclick="startVerification()">start verification</button>
+      <div class="spacer"></div>
+      <div class="age-input-wrap">
+        <div class="age-label">minimum age required</div>
+        <input type="number" id="min-age-input" placeholder="18" min="1" max="120" step="1" style="border-radius:6px;width:100px;height:100px;font-size:42px;" />
+      </div>
+      <button class="btn-neon btn-neon-home" onclick="playClickSound();startVerification()">start verification</button>
       <button class="btn-ghost" onclick="goTo('screen-log')" style="margin-top:10px;">session log</button>
+      <button class="btn-ghost btn-restart" onclick="restartSession()" style="margin-top:8px;">restart session</button>
     </div>
   </div>
 
-  <!-- screen 2: scan id -->
   <div class="screen" id="screen-scan-id">
     <div class="screen-inner">
       <div class="top-nav-row">
@@ -58,7 +54,6 @@
         <span class="step-label">step 1 of 3</span>
       </div>
       <div class="screen-title">scan ID document</div>
-      <div class="screen-sub">point camera at the front of the ID</div>
       <div class="cam-box" id="cam-box-id">
         <video id="video-id" autoplay playsinline></video>
         <canvas id="canvas-id" style="display:none;"></canvas>
@@ -80,7 +75,6 @@
         <button class="btn-retake" id="btn-retake-id">retake</button>
         <button class="btn-use" id="btn-use-id">use photo</button>
       </div>
-      <div class="doc-pill">DNI</div>
       <div class="spacer"></div>
       <button class="btn-neon" id="btn-capture-id" onclick="startCamera('id')">open camera</button>
       <button class="btn-ghost" onclick="useGallery('id')" style="margin-top:8px;">use gallery / video</button>
@@ -88,7 +82,6 @@
     </div>
   </div>
 
-  <!-- screen 3: live face -->
   <div class="screen" id="screen-live">
     <div class="screen-inner">
       <div class="top-nav-row">
@@ -115,7 +108,6 @@
               <path d="M4 22c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="#2a2a4a" stroke-width="1.2" stroke-linecap="round"/>
             </svg>
           </div>
-          <div class="cam-label">Enter age first, then open camera</div>
         </div>
       </div>
       <div id="retake-row-live" class="retake-row" style="display:none;">
@@ -126,16 +118,12 @@
         <div class="liveness-dot"></div>
         <span>liveness check active</span>
       </div>
-      <div class="age-input-wrap">
-        <div class="age-label">age on ID</div>
-        <input type="number" id="age-input" placeholder="enter age first" min="1" max="120" step="1" />
-      </div>
+      <input type="number" id="age-input" style="display:none;" />
       <div class="spacer"></div>
       <button class="btn-neon" id="btn-capture-live" onclick="startCamera('live')">open camera</button>
     </div>
   </div>
 
-  <!-- screen 4: processing -->
   <div class="screen" id="screen-processing">
     <div class="screen-inner processing-screen">
       <div class="top-progress-bar">
@@ -148,8 +136,8 @@
           <div class="scan-ring ring-3"></div>
           <div class="scan-core">
             <div class="bouncer-eyes">
-              <div class="eye" style="width:14px;height:14px;"></div>
-              <div class="eye" style="width:14px;height:14px;animation-delay:0.15s;"></div>
+              <div class="eye" style="width:20px;height:20px;"></div>
+              <div class="eye" style="width:20px;height:20px;animation-delay:0.7s;"></div>
             </div>
           </div>
         </div>
@@ -166,15 +154,12 @@
     </div>
   </div>
 
-  <!-- screen 5a: verified -->
   <div class="screen" id="screen-verified">
     <div class="screen-inner">
       <div id="confetti-container"></div>
       <div class="result-card ok">
         <div class="result-label ok">Verified</div>
-        <div class="result-sub">Identity confirmed</div>
-        <div class="score-bar"><div class="score-fill ok" id="score-fill-ok"></div></div>
-        <div class="score-num ok" id="score-num-ok">—</div>
+        <div class="result-sub">Identity confirmed ·  <span id="display-min-age-ok"></span></div>
       </div>
       <div class="layers-box">
         <div class="layer-card" id="lcard-face-ok">
@@ -185,29 +170,28 @@
         <div class="layer-card" id="lcard-age-ok">
           <div class="layer-card-top"><span class="layer-card-name">age check</span><span class="layer-card-score" id="layer-age-score-ok">—</span></div>
           <span class="layer-card-val ok" id="layer-age-ok">—</span>
-          <div class="layer-card-bar"><div class="layer-card-bar-fill ok" id="layer-age-bar-ok"></div></div>
         </div>
         <div class="layer-card" id="lcard-doc-ok">
-          <div class="layer-card-top"><span class="layer-card-name">document</span><span class="layer-card-score" id="layer-doc-score-ok">—</span></div>
+          <div class="layer-card-top"><span class="layer-card-name">document</span><span class="layer-card-score" id="layer-doc-score-ok"></span></div>
           <span class="layer-card-val ok" id="layer-doc-ok">—</span>
-          <div class="layer-card-bar"><div class="layer-card-bar-fill neutral" id="layer-doc-bar-ok"></div></div>
         </div>
-        <div id="debug-panel-ok" style="font-size:11px;font-family:monospace;color:#666;padding:8px 0;line-height:1.8;"></div>
+        <div class="layer-card" id="lcard-agestatus-ok">
+          <div class="layer-card-top"><span class="layer-card-name">age status</span><span class="layer-card-score" id="layer-agestatus-score-ok"></span></div>
+          <span class="layer-card-val ok" id="layer-agestatus-ok">—</span>
+        </div>
       </div>
       <div class="spacer"></div>
-      <button class="btn-neon" onclick="resetApp()">Admit, next person</button>
+      <button class="btn-neon" onclick="resetApp()">admit, next person</button>
       <button class="btn-ghost" onclick="goTo('screen-log')" style="margin-top:8px;">view session log</button>
+      <button class="btn-ghost btn-restart" onclick="restartSession()" style="margin-top:8px;">restart session</button>
     </div>
   </div>
 
-  <!-- screen 5b: suspicious -->
   <div class="screen" id="screen-suspicious">
     <div class="screen-inner">
       <div class="result-card warn">
-        <div class="result-label warn">suspicious</div>
-        <div class="result-sub">manual check needed</div>
-        <div class="score-bar"><div class="score-fill warn" id="score-fill-warn"></div></div>
-        <div class="score-num warn" id="score-num-warn">—</div>
+        <div class="result-label warn">Denied Entry</div>
+        <div class="result-sub">manual check needed ·  <span id="display-min-age-warn"></span></div>
       </div>
       <div class="layers-box">
         <div class="layer-card" id="lcard-face-warn">
@@ -218,32 +202,33 @@
         <div class="layer-card" id="lcard-age-warn">
           <div class="layer-card-top"><span class="layer-card-name">age check</span><span class="layer-card-score" id="layer-age-score-warn">—</span></div>
           <span class="layer-card-val flag" id="layer-age-warn">—</span>
-          <div class="layer-card-bar"><div class="layer-card-bar-fill flag" id="layer-age-bar-warn"></div></div>
         </div>
         <div class="layer-card" id="lcard-doc-warn">
-          <div class="layer-card-top"><span class="layer-card-name">document</span><span class="layer-card-score" id="layer-doc-score-warn">—</span></div>
+          <div class="layer-card-top"><span class="layer-card-name">document</span><span class="layer-card-score" id="layer-doc-score-warn"></span></div>
           <span class="layer-card-val" id="layer-doc-warn">—</span>
-          <div class="layer-card-bar"><div class="layer-card-bar-fill neutral" id="layer-doc-bar-warn"></div></div>
         </div>
-        <div id="debug-panel-warn" style="font-size:11px;font-family:monospace;color:#666;padding:8px 0;line-height:1.8;"></div>
+        <div class="layer-card" id="lcard-agestatus-warn">
+          <div class="layer-card-top"><span class="layer-card-name">age status</span><span class="layer-card-score" id="layer-agestatus-score-warn"></span></div>
+          <span class="layer-card-val flag" id="layer-agestatus-warn">—</span>
+        </div>
       </div>
       <div class="spacer"></div>
-      <button class="btn-deny" onclick="resetApp()">deny entry</button>
+      <button class="btn-deny" onclick="resetApp()">deny entry, next person</button>
       <button class="btn-ghost" onclick="goTo('screen-log')" style="margin-top:8px;">flag for manager</button>
+      <button class="btn-ghost btn-restart" onclick="restartSession()" style="margin-top:8px;">restart session</button>
     </div>
   </div>
 
-  <!-- screen 6: log -->
   <div class="screen" id="screen-log">
     <div class="screen-inner">
       <div class="top-nav-row">
-        <button class="btn-back" onclick="goTo('screen-home')">‹ back</button>
+        <button class="btn-back" onclick="goTo(lastResultScreen)">‹ back</button>
       </div>
       <div class="screen-title">session log</div>
       <div class="screen-sub">tonight · madrid</div>
       <div id="log-list" class="log-list"></div>
       <div class="spacer"></div>
-      <button class="btn-ghost" onclick="goTo('screen-home')">back to home</button>
+      <button class="btn-ghost" onclick="goTo('screen-home')" style="margin-top:8px;">home</button>
     </div>
   </div>
 
